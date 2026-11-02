@@ -26,6 +26,7 @@ Requirements: `git` and [uv](https://docs.astral.sh/uv/).
 ## Releasing
 
 1. Update `version` in `custom_components/smarttub/manifest.json`.
-2. Add an entry to `CHANGELOG.md`.
-3. Create a GitHub release with tag `v<version>` (the release workflow checks
-   that the tag matches the manifest).
+2. Add a `## <version> — <date>` entry to `CHANGELOG.md`.
+3. Push to `main`. When the *Validate* workflow succeeds, the *Release*
+   workflow creates tag `v<version>` and a GitHub release with the changelog
+   entry as release notes. HACS then offers the update.
