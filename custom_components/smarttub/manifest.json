@@ -1,0 +1,13 @@
+{
+  "domain": "smarttub",
+  "name": "SmartTub (resilient)",
+  "codeowners": ["@sschouten"],
+  "config_flow": true,
+  "documentation": "https://github.com/sschouten/Smarttub",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/sschouten/Smarttub/issues",
+  "loggers": ["smarttub"],
+  "requirements": ["python-smarttub>=0.0.47"],
+  "version": "1.0.0"
+}

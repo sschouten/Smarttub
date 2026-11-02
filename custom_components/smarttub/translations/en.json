@@ -1,0 +1,207 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Account is already configured"
+    },
+    "error": {
+      "invalid_auth": "Invalid authentication"
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address associated with your SmartTub account",
+          "password": "The password for your SmartTub account"
+        },
+        "description": "The SmartTub integration needs to re-authenticate your account",
+        "title": "Reauthenticate Integration"
+      },
+      "user": {
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address associated with your SmartTub account",
+          "password": "The password for your SmartTub account"
+        },
+        "description": "Enter your SmartTub email address and password to log in",
+        "title": "Login"
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "max_backoff_too_low": "Must be at least the poll interval."
+    },
+    "step": {
+      "init": {
+        "title": "Polling and resilience",
+        "description": "Tune how the SmartTub cloud API is polled. Defaults: interval 60 s, status timeout 30 s, reminders/errors timeout 20 s, command timeout 45 s, unavailable after 5 failed polls, back-off up to 600 s.",
+        "data": {
+          "scan_interval": "Poll interval",
+          "poll_timeout": "Status timeout",
+          "aux_timeout": "Reminders/errors timeout",
+          "command_timeout": "Command timeout",
+          "failure_threshold": "Failed polls before unavailable",
+          "max_backoff": "Maximum poll interval while failing"
+        },
+        "data_description": {
+          "scan_interval": "Seconds between polls when the API is healthy.",
+          "poll_timeout": "Seconds allowed for the fullStatus call, which drives almost all entities.",
+          "aux_timeout": "Seconds allowed for the reminders and errors calls. On failure the last known values are kept.",
+          "command_timeout": "Seconds allowed for a command (jets, lights, temperature) including confirmation.",
+          "failure_threshold": "The last good data is kept until this many polls in a row have failed. 1 = behaviour of the built-in integration.",
+          "max_backoff": "While the API keeps failing, the poll interval doubles up to this value."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "api_connection": {
+        "name": "API connection"
+      },
+      "cover_sensor": {
+        "name": "Cover sensor"
+      },
+      "error": {
+        "name": "Error"
+      },
+      "online": {
+        "name": "Online"
+      },
+      "reminder": {
+        "name": "{reminder_name} reminder"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
+      }
+    },
+    "light": {
+      "light_zone": {
+        "name": "Light {zone}"
+      }
+    },
+    "sensor": {
+      "blowout_cycle": {
+        "name": "Blowout cycle"
+      },
+      "cleanup_cycle": {
+        "name": "Cleanup cycle"
+      },
+      "consecutive_failed_polls": {
+        "name": "Consecutive failed polls"
+      },
+      "flow_switch": {
+        "name": "Flow switch"
+      },
+      "last_poll_duration": {
+        "name": "Last poll duration"
+      },
+      "last_successful_poll": {
+        "name": "Last successful poll"
+      },
+      "ozone": {
+        "name": "Ozone"
+      },
+      "primary_filtration_cycle": {
+        "name": "Primary filtration cycle"
+      },
+      "secondary_filtration_cycle": {
+        "name": "Secondary filtration cycle"
+      },
+      "state": {
+        "name": "State"
+      },
+      "uv": {
+        "name": "UV"
+      }
+    },
+    "switch": {
+      "circulation_pump": {
+        "name": "Circulation pump"
+      },
+      "jet": {
+        "name": "Jet {pump_id}"
+      },
+      "pump": {
+        "name": "Pump {pump_id}"
+      }
+    }
+  },
+  "exceptions": {
+    "command_timeout": {
+      "message": "SmartTub did not respond to \"{command}\" within {timeout} s. The command may still be applied; the state updates at the next poll."
+    },
+    "command_failed": {
+      "message": "SmartTub command \"{command}\" failed: {error}"
+    }
+  },
+  "issues": {
+    "api_unreachable": {
+      "title": "SmartTub cloud API unreachable",
+      "description": "The SmartTub cloud API failed {failures} polls in a row (last error: {error}). Last successful poll: {last_success}. Entities are unavailable until the API responds again; the poll interval backs off automatically. This issue disappears after the next successful poll."
+    },
+    "upstream_changed": {
+      "title": "SmartTub fork may no longer be needed",
+      "description": "Home Assistant {version}: {reason}. Check the release notes; if the timeout fix is included, remove `custom_components/smarttub` (or the HACS repository) and restart. Your entities and automations keep working because the domain and unique IDs are identical."
+    }
+  },
+  "services": {
+    "reset_reminder": {
+      "description": "Resets the maintenance reminder on a hot tub.",
+      "fields": {
+        "days": {
+          "description": "The number of days when the next reminder should trigger.",
+          "name": "Days"
+        }
+      },
+      "name": "Reset a reminder"
+    },
+    "set_primary_filtration": {
+      "description": "Updates the primary filtration settings.",
+      "fields": {
+        "duration": {
+          "description": "The desired duration of the primary filtration cycle.",
+          "name": "Duration"
+        },
+        "start_hour": {
+          "description": "The hour of the day at which to begin the primary filtration cycle.",
+          "name": "Start hour"
+        }
+      },
+      "name": "Update primary filtration settings"
+    },
+    "set_secondary_filtration": {
+      "description": "Updates the secondary filtration settings.",
+      "fields": {
+        "mode": {
+          "description": "The secondary filtration mode.",
+          "name": "Mode"
+        }
+      },
+      "name": "Update secondary filtration settings"
+    },
+    "snooze_reminder": {
+      "description": "Temporarily suppresses the maintenance reminder on a hot tub.",
+      "fields": {
+        "days": {
+          "description": "The number of days to snooze the reminder.",
+          "name": "Days"
+        }
+      },
+      "name": "Snooze a reminder"
+    }
+  }
+}

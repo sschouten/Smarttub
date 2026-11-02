@@ -1,0 +1,180 @@
+diff --git a/homeassistant/components/smarttub/const.py b/homeassistant/components/smarttub/const.py
+index 8bf9da2..e63c35d 100644
+--- a/homeassistant/components/smarttub/const.py
++++ b/homeassistant/components/smarttub/const.py
+@@ -6,7 +6,10 @@ EVENT_SMARTTUB = "smarttub"
+ 
+ SCAN_INTERVAL = 60
+ 
+-POLLING_TIMEOUT = 10
++# fullStatus drives almost all entities; the cloud API can take >10 s
++POLLING_TIMEOUT = 30
++# reminders/errors are auxiliary; on failure the last known values are kept
++AUX_POLLING_TIMEOUT = 20
+ API_TIMEOUT = 5
+ 
+ DEFAULT_MIN_TEMP = 18.5
+diff --git a/homeassistant/components/smarttub/controller.py b/homeassistant/components/smarttub/controller.py
+index 095179d..acc2a58 100644
+--- a/homeassistant/components/smarttub/controller.py
++++ b/homeassistant/components/smarttub/controller.py
+@@ -1,6 +1,7 @@
+ """Interface to the SmartTub API."""
+ 
+ import asyncio
++from collections.abc import Coroutine
+ from datetime import timedelta
+ import logging
+ from typing import Any
+@@ -24,6 +25,7 @@ from .const import (
+     ATTR_REMINDERS,
+     ATTR_SENSORS,
+     ATTR_STATUS,
++    AUX_POLLING_TIMEOUT,
+     DOMAIN,
+     POLLING_TIMEOUT,
+     SCAN_INTERVAL,
+@@ -79,7 +81,7 @@ class SmartTubController:
+             update_interval=timedelta(seconds=SCAN_INTERVAL),
+         )
+ 
+-        await self.coordinator.async_refresh()
++        await self.coordinator.async_config_entry_first_refresh()
+ 
+         self.async_register_devices(entry)
+ 
+@@ -90,25 +92,48 @@ class SmartTubController:
+ 
+         data = {}
+         try:
+-            async with asyncio.timeout(POLLING_TIMEOUT):
+-                for spa in self.spas:
+-                    data[spa.id] = await self._get_spa_data(spa)
+-        except APIError as err:
++            for spa in self.spas:
++                data[spa.id] = await self._get_spa_data(spa)
++        except (APIError, TimeoutError, client_exceptions.ClientError) as err:
+             raise UpdateFailed(err) from err
+ 
+         return data
+ 
+     async def _get_spa_data(self, spa: Spa) -> dict[str, Any]:
++        previous = (self.coordinator.data or {}).get(spa.id, {})
++
+         full_status, reminders, errors = await asyncio.gather(
+-            spa.get_status_full(),
+-            spa.get_reminders(),
+-            spa.get_errors(),
++            _with_timeout(spa.get_status_full(), POLLING_TIMEOUT),
++            _with_timeout(spa.get_reminders(), AUX_POLLING_TIMEOUT),
++            _with_timeout(spa.get_errors(), AUX_POLLING_TIMEOUT),
++            return_exceptions=True,
+         )
++        if isinstance(full_status, BaseException):
++            raise full_status
++
++        if isinstance(
++            reminders, (APIError, TimeoutError, client_exceptions.ClientError)
++        ):
++            _LOGGER.debug(
++                "Failed to fetch reminders, keeping last known: %s", reminders
++            )
++            reminders_map = previous.get(ATTR_REMINDERS, {})
++        elif isinstance(reminders, BaseException):
++            raise reminders
++        else:
++            reminders_map = {reminder.id: reminder for reminder in reminders}
++
++        if isinstance(errors, (APIError, TimeoutError, client_exceptions.ClientError)):
++            _LOGGER.debug("Failed to fetch errors, keeping last known: %s", errors)
++            errors = previous.get(ATTR_ERRORS, [])
++        elif isinstance(errors, BaseException):
++            raise errors
++
+         return {
+             ATTR_STATUS: full_status,
+             ATTR_PUMPS: {pump.id: pump for pump in full_status.pumps},
+             ATTR_LIGHTS: {light.zone: light for light in full_status.lights},
+-            ATTR_REMINDERS: {reminder.id: reminder for reminder in reminders},
++            ATTR_REMINDERS: reminders_map,
+             ATTR_ERRORS: errors,
+             ATTR_SENSORS: {sensor.address: sensor for sensor in full_status.sensors},
+         }
+@@ -133,3 +158,9 @@ class SmartTubController:
+ 
+         await api.login(email, password)
+         return await api.get_account()
++
++
++async def _with_timeout[T](coro: Coroutine[Any, Any, T], timeout: float) -> T:
++    """Await a coroutine with its own timeout."""
++    async with asyncio.timeout(timeout):
++        return await coro
+diff --git a/tests/components/smarttub/test_diagnostics.py b/tests/components/smarttub/test_diagnostics.py
+index 253dcba..e251b9b 100644
+--- a/tests/components/smarttub/test_diagnostics.py
++++ b/tests/components/smarttub/test_diagnostics.py
+@@ -59,25 +59,3 @@ async def test_entry_diagnostics(
+     result = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
+ 
+     assert result == snapshot
+-
+-
+-async def test_entry_diagnostics_no_coordinator_data(
+-    hass: HomeAssistant,
+-    hass_client: ClientSessionGenerator,
+-    spa: smarttub.Spa,
+-    config_entry: MockConfigEntry,
+-) -> None:
+-    """Test diagnostics doesn't crash when the coordinator has no data yet.
+-
+-    This can happen if the initial refresh fails, e.g. because the API
+-    returned something the smarttub library doesn't know how to parse.
+-    """
+-    spa.get_status_full.side_effect = RuntimeError("boom")
+-
+-    config_entry.add_to_hass(hass)
+-    await hass.config_entries.async_setup(config_entry.entry_id)
+-    await hass.async_block_till_done()
+-
+-    result = await get_diagnostics_for_config_entry(hass, hass_client, config_entry)
+-
+-    assert result["spas"] == []
+diff --git a/tests/components/smarttub/test_init.py b/tests/components/smarttub/test_init.py
+index 5679348..72ba4b3 100644
+--- a/tests/components/smarttub/test_init.py
++++ b/tests/components/smarttub/test_init.py
+@@ -56,3 +56,33 @@ async def test_unload_entry(hass: HomeAssistant, config_entry) -> None:
+ 
+     assert await hass.config_entries.async_unload(config_entry.entry_id)
+     assert config_entry.state is ConfigEntryState.NOT_LOADED
++
++
++async def test_auxiliary_failure_keeps_entities_available(
++    hass: HomeAssistant, config_entry, spa
++) -> None:
++    """A failing reminders/errors call does not fail the whole update."""
++    config_entry.add_to_hass(hass)
++    await hass.config_entries.async_setup(config_entry.entry_id)
++    await hass.async_block_till_done()
++
++    spa.get_reminders.side_effect = TimeoutError
++    spa.get_errors.side_effect = TimeoutError
++    coordinator = config_entry.runtime_data.coordinator
++    await coordinator.async_refresh()
++    await hass.async_block_till_done()
++
++    assert coordinator.last_update_success
++    reminder = hass.states.get("binary_sensor.mockbrand1_mockmodel1_myfilter_reminder")
++    assert reminder is not None
++    assert reminder.state != "unavailable"
++
++
++async def test_first_refresh_failure_retries_setup(
++    hass: HomeAssistant, config_entry, spa
++) -> None:
++    """A failing first poll retries the setup."""
++    spa.get_status_full.side_effect = TimeoutError
++    config_entry.add_to_hass(hass)
++    await hass.config_entries.async_setup(config_entry.entry_id)
++    assert config_entry.state is ConfigEntryState.SETUP_RETRY

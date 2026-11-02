@@ -1,0 +1,207 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Account is al geconfigureerd"
+    },
+    "error": {
+      "invalid_auth": "Ongeldige authenticatie"
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "email": "E-mail",
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "email": "Het e-mailadres van je SmartTub-account",
+          "password": "Het wachtwoord van je SmartTub-account"
+        },
+        "description": "De SmartTub-integratie moet je account opnieuw authenticeren",
+        "title": "Integratie opnieuw authenticeren"
+      },
+      "user": {
+        "data": {
+          "email": "E-mail",
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "email": "Het e-mailadres van je SmartTub-account",
+          "password": "Het wachtwoord van je SmartTub-account"
+        },
+        "description": "Voer het e-mailadres en wachtwoord van je SmartTub-account in",
+        "title": "Inloggen"
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "max_backoff_too_low": "Moet minstens het pollinterval zijn."
+    },
+    "step": {
+      "init": {
+        "title": "Polling en robuustheid",
+        "description": "Stel in hoe de SmartTub cloud-API wordt gepold. Standaard: interval 60 s, status-time-out 30 s, herinneringen/fouten-time-out 20 s, commando-time-out 45 s, onbeschikbaar na 5 mislukte polls, back-off tot 600 s.",
+        "data": {
+          "scan_interval": "Pollinterval",
+          "poll_timeout": "Status-time-out",
+          "aux_timeout": "Time-out herinneringen/fouten",
+          "command_timeout": "Commando-time-out",
+          "failure_threshold": "Mislukte polls voor onbeschikbaar",
+          "max_backoff": "Maximaal pollinterval bij storing"
+        },
+        "data_description": {
+          "scan_interval": "Seconden tussen polls als de API gezond is.",
+          "poll_timeout": "Seconden voor de fullStatus-aanroep, waar bijna alle entiteiten op draaien.",
+          "aux_timeout": "Seconden voor de herinneringen- en foutenaanroep. Bij mislukken blijven de laatst bekende waarden staan.",
+          "command_timeout": "Seconden voor een commando (jets, licht, temperatuur) inclusief bevestiging.",
+          "failure_threshold": "De laatste goede data blijft staan tot zoveel polls op rij mislukt zijn. 1 = gedrag van de ingebouwde integratie.",
+          "max_backoff": "Zolang de API faalt, verdubbelt het pollinterval tot deze waarde."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "api_connection": {
+        "name": "API-verbinding"
+      },
+      "cover_sensor": {
+        "name": "Afdekkingssensor"
+      },
+      "error": {
+        "name": "Fout"
+      },
+      "online": {
+        "name": "Online"
+      },
+      "reminder": {
+        "name": "{reminder_name} herinnering"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Vernieuwen"
+      }
+    },
+    "climate": {
+      "thermostat": {
+        "name": "Thermostat"
+      }
+    },
+    "light": {
+      "light_zone": {
+        "name": "Licht {zone}"
+      }
+    },
+    "sensor": {
+      "blowout_cycle": {
+        "name": "Uitblaascyclus"
+      },
+      "cleanup_cycle": {
+        "name": "Reinigingscyclus"
+      },
+      "consecutive_failed_polls": {
+        "name": "Opeenvolgende mislukte polls"
+      },
+      "flow_switch": {
+        "name": "Stromingsschakelaar"
+      },
+      "last_poll_duration": {
+        "name": "Duur laatste poll"
+      },
+      "last_successful_poll": {
+        "name": "Laatste geslaagde poll"
+      },
+      "ozone": {
+        "name": "Ozon"
+      },
+      "primary_filtration_cycle": {
+        "name": "Primaire filtratiecyclus"
+      },
+      "secondary_filtration_cycle": {
+        "name": "Secundaire filtratiecyclus"
+      },
+      "state": {
+        "name": "Status"
+      },
+      "uv": {
+        "name": "UV"
+      }
+    },
+    "switch": {
+      "circulation_pump": {
+        "name": "Circulatiepomp"
+      },
+      "jet": {
+        "name": "Jet {pump_id}"
+      },
+      "pump": {
+        "name": "Pomp {pump_id}"
+      }
+    }
+  },
+  "exceptions": {
+    "command_timeout": {
+      "message": "SmartTub reageerde niet binnen {timeout} s op \"{command}\". Het commando kan alsnog worden uitgevoerd; de status volgt bij de volgende poll."
+    },
+    "command_failed": {
+      "message": "SmartTub-commando \"{command}\" mislukt: {error}"
+    }
+  },
+  "issues": {
+    "api_unreachable": {
+      "title": "SmartTub cloud-API onbereikbaar",
+      "description": "De SmartTub cloud-API faalde {failures} polls op rij (laatste fout: {error}). Laatste geslaagde poll: {last_success}. Entiteiten zijn onbeschikbaar tot de API weer reageert; het pollinterval wordt automatisch verlengd. Deze melding verdwijnt na de volgende geslaagde poll."
+    },
+    "upstream_changed": {
+      "title": "SmartTub-fork mogelijk niet meer nodig",
+      "description": "Home Assistant {version}: {reason}. Controleer de release notes; zit de time-outfix erin, verwijder dan `custom_components/smarttub` (of de HACS-repository) en herstart. Entiteiten en automations blijven werken omdat domein en unique IDs gelijk zijn."
+    }
+  },
+  "services": {
+    "reset_reminder": {
+      "description": "Zet de onderhoudsherinnering van een spa terug.",
+      "fields": {
+        "days": {
+          "description": "Aantal dagen tot de volgende herinnering.",
+          "name": "Dagen"
+        }
+      },
+      "name": "Herinnering terugzetten"
+    },
+    "set_primary_filtration": {
+      "description": "Wijzigt de instellingen van de primaire filtratie.",
+      "fields": {
+        "duration": {
+          "description": "Gewenste duur van de primaire filtratiecyclus.",
+          "name": "Duur"
+        },
+        "start_hour": {
+          "description": "Uur van de dag waarop de primaire filtratiecyclus start.",
+          "name": "Startuur"
+        }
+      },
+      "name": "Primaire filtratie instellen"
+    },
+    "set_secondary_filtration": {
+      "description": "Wijzigt de instellingen van de secundaire filtratie.",
+      "fields": {
+        "mode": {
+          "description": "De modus van de secundaire filtratie.",
+          "name": "Modus"
+        }
+      },
+      "name": "Secundaire filtratie instellen"
+    },
+    "snooze_reminder": {
+      "description": "Stelt de onderhoudsherinnering van een spa tijdelijk uit.",
+      "fields": {
+        "days": {
+          "description": "Aantal dagen uitstel.",
+          "name": "Dagen"
+        }
+      },
+      "name": "Herinnering uitstellen"
+    }
+  }
+}

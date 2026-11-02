@@ -1,0 +1,42 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "api_connection": {
+        "default": "mdi:cloud-check-outline",
+        "state": {
+          "off": "mdi:cloud-alert-outline"
+        }
+      }
+    },
+    "button": {
+      "refresh": {
+        "default": "mdi:refresh"
+      }
+    },
+    "sensor": {
+      "consecutive_failed_polls": {
+        "default": "mdi:counter"
+      },
+      "last_poll_duration": {
+        "default": "mdi:timer-outline"
+      },
+      "last_successful_poll": {
+        "default": "mdi:cloud-clock-outline"
+      }
+    }
+  },
+  "services": {
+    "reset_reminder": {
+      "service": "mdi:timer-sync"
+    },
+    "set_primary_filtration": {
+      "service": "mdi:filter"
+    },
+    "set_secondary_filtration": {
+      "service": "mdi:filter-multiple"
+    },
+    "snooze_reminder": {
+      "service": "mdi:timer-pause"
+    }
+  }
+}
