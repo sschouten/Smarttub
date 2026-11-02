@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 — 2026-11-02
+
+- New: `custom:smarttub-card`, shipped with the integration and registered
+  automatically. Full and compact variant, automatic spa discovery, light/dark
+  theme, English and Dutch, visual editor, responsive layout.
+- New: ready-made dashboards in `dashboards/` (built-in cards, Mushroom, and
+  the SmartTub card; English and Dutch).
+
 ## 1.0.1 — 2026-11-02
 
 - Neutral wording for the "built-in integration changed" repair issue (EN/NL).

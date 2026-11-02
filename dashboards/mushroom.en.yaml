@@ -1,0 +1,261 @@
+# SmartTub dashboard — Mushroom cards (English)
+#
+# Requires: Mushroom (HACS → Frontend → Mushroom).
+# Paste into: Settings → Dashboards → Add dashboard → New dashboard from
+# scratch → ⋮ → Edit dashboard → ⋮ → Raw configuration editor.
+# Replace "jacuzzi_j_435" with your spa's entity prefix (search & replace).
+# Reminder entities depend on your spa model; adjust the list if needed.
+title: Hot tub
+views:
+  - title: Hot tub
+    path: hot-tub
+    icon: mdi:hot-tub
+    type: sections
+    max_columns: 3
+    sections:
+      # ---------------------------------------------------------- temperature
+      - type: grid
+        cards:
+          - type: custom:mushroom-chips-card
+            alignment: center
+            chips:
+              - type: template
+                entity: climate.jacuzzi_j_435_thermostat
+                icon: mdi:thermometer-water
+                icon_color: cyan
+                content: >-
+                  {{ state_attr('climate.jacuzzi_j_435_thermostat', 'current_temperature') }} °C
+              - type: template
+                entity: climate.jacuzzi_j_435_thermostat
+                icon: mdi:fire
+                icon_color: >-
+                  {{ 'orange' if state_attr('climate.jacuzzi_j_435_thermostat', 'hvac_action') == 'heating' else 'grey' }}
+                content: >-
+                  {{ 'Heating' if state_attr('climate.jacuzzi_j_435_thermostat', 'hvac_action') == 'heating' else 'Idle' }}
+              - type: template
+                entity: binary_sensor.jacuzzi_j_435_api_connection
+                icon: >-
+                  {{ 'mdi:cloud-check-outline' if is_state('binary_sensor.jacuzzi_j_435_api_connection', 'on') else 'mdi:cloud-alert-outline' }}
+                icon_color: >-
+                  {{ 'green' if is_state('binary_sensor.jacuzzi_j_435_api_connection', 'on') else 'amber' }}
+                content: >-
+                  {{ 'Cloud OK' if is_state('binary_sensor.jacuzzi_j_435_api_connection', 'on') else 'Cloud slow' }}
+                tap_action:
+                  action: more-info
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: binary_sensor.jacuzzi_j_435_api_connection
+                state: "off"
+            card:
+              type: custom:mushroom-template-card
+              primary: SmartTub cloud is slow — showing the last known data
+              secondary: >-
+                {{ states('sensor.jacuzzi_j_435_consecutive_failed_polls') }} of
+                {{ state_attr('sensor.jacuzzi_j_435_consecutive_failed_polls', 'failure_threshold') }}
+                polls failed · last update
+                {{ relative_time(states('sensor.jacuzzi_j_435_last_successful_poll') | as_datetime) }} ago
+              icon: mdi:cloud-alert-outline
+              icon_color: amber
+              multiline_secondary: true
+          - type: custom:mushroom-climate-card
+            entity: climate.jacuzzi_j_435_thermostat
+            name: Water
+            icon: mdi:hot-tub
+            show_temperature_control: true
+            collapsible_controls: false
+            fill_container: true
+          - type: tile
+            entity: climate.jacuzzi_j_435_thermostat
+            name: Heat mode
+            icon: mdi:tune-variant
+            hide_state: true
+            features:
+              - type: climate-preset-modes
+                style: buttons
+                preset_modes:
+                  - none
+                  - eco
+                  - day
+                  - ready
+          - type: history-graph
+            title: Last 24 hours
+            hours_to_show: 24
+            entities:
+              - entity: climate.jacuzzi_j_435_thermostat
+                name: Water
+
+      # -------------------------------------------------------------- control
+      - type: grid
+        cards:
+          - type: heading
+            heading: Jets & lights
+            icon: mdi:pump
+          - type: custom:mushroom-entity-card
+            entity: switch.jacuzzi_j_435_jet_p1
+            name: Jets P1
+            icon: mdi:pump
+            icon_color: cyan
+            tap_action:
+              action: toggle
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-entity-card
+            entity: switch.jacuzzi_j_435_jet_p2
+            name: Jets P2
+            icon: mdi:pump
+            icon_color: cyan
+            tap_action:
+              action: toggle
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-light-card
+            entity: light.jacuzzi_j_435_light_1
+            name: Light 1
+            use_light_color: true
+            show_brightness_control: true
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-light-card
+            entity: light.jacuzzi_j_435_light_2
+            name: Light 2
+            use_light_color: true
+            show_brightness_control: true
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-entity-card
+            entity: switch.jacuzzi_j_435_circulation_pump
+            name: Circulation pump
+            icon: mdi:sync
+            fill_container: true
+            grid_options:
+              columns: 12
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: entity
+                entity: sensor.jacuzzi_j_435_state
+                icon: mdi:hot-tub
+              - type: entity
+                entity: sensor.jacuzzi_j_435_ozone
+                icon: mdi:molecule
+              - type: entity
+                entity: sensor.jacuzzi_j_435_uv
+                icon: mdi:weather-sunny-alert
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: binary_sensor.jacuzzi_j_435_error
+                    state: "on"
+                chip:
+                  type: entity
+                  entity: binary_sensor.jacuzzi_j_435_error
+                  icon_color: red
+
+      # ---------------------------------------------- filtration & maintenance
+      - type: grid
+        cards:
+          - type: heading
+            heading: Filtration & maintenance
+            icon: mdi:air-filter
+          - type: custom:mushroom-template-card
+            entity: sensor.jacuzzi_j_435_primary_filtration_cycle
+            primary: Primary filtration
+            secondary: >-
+              {{ '%02d' | format(state_attr(entity, 'start_hour') | int(0)) }}:00 ·
+              {{ state_attr(entity, 'duration') }} h · {{ states(entity) }}
+            icon: mdi:air-filter
+            icon_color: >-
+              {{ 'cyan' if is_state(entity, 'active') else 'grey' }}
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-template-card
+            entity: sensor.jacuzzi_j_435_secondary_filtration_cycle
+            primary: Secondary filtration
+            secondary: "{{ state_attr(entity, 'mode') }} · {{ states(entity) }}"
+            icon: mdi:air-filter
+            icon_color: >-
+              {{ 'cyan' if is_state(entity, 'active') else 'grey' }}
+            fill_container: true
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.jacuzzi_j_435_refresh_water_reminder
+            primary: Refresh water
+            secondary: "{{ state_attr(entity, 'days') }} days"
+            icon: mdi:water-sync
+            icon_color: "{{ 'orange' if is_state(entity, 'on') else 'blue' }}"
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.jacuzzi_j_435_proclarity_reminder
+            primary: ProClarity
+            secondary: "{{ state_attr(entity, 'days') }} days"
+            icon: mdi:filter
+            icon_color: "{{ 'orange' if is_state(entity, 'on') else 'blue' }}"
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.jacuzzi_j_435_proclarity_depth_reminder
+            primary: ProClarity depth
+            secondary: "{{ state_attr(entity, 'days') }} days"
+            icon: mdi:filter-variant
+            icon_color: "{{ 'orange' if is_state(entity, 'on') else 'blue' }}"
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.jacuzzi_j_435_clearray_reminder
+            primary: ClearRay
+            secondary: "{{ state_attr(entity, 'days') }} days"
+            icon: mdi:lightbulb-on-outline
+            icon_color: "{{ 'orange' if is_state(entity, 'on') else 'blue' }}"
+            grid_options:
+              columns: 6
+
+      # ------------------------------------------------------- cloud & polling
+      - type: grid
+        cards:
+          - type: heading
+            heading: SmartTub cloud
+            icon: mdi:cloud-sync-outline
+          - type: custom:mushroom-template-card
+            entity: binary_sensor.jacuzzi_j_435_api_connection
+            primary: >-
+              {{ 'Cloud OK' if is_state(entity, 'on') else 'Cloud slow' }}
+            secondary: >-
+              Last poll {{ states('sensor.jacuzzi_j_435_last_poll_duration') }} s ·
+              {{ states('sensor.jacuzzi_j_435_consecutive_failed_polls') }} failed in a row
+            icon: >-
+              {{ 'mdi:cloud-check-outline' if is_state(entity, 'on') else 'mdi:cloud-alert-outline' }}
+            icon_color: "{{ 'green' if is_state(entity, 'on') else 'amber' }}"
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: 12
+          - type: custom:mushroom-entity-card
+            entity: sensor.jacuzzi_j_435_last_successful_poll
+            name: Last successful poll
+            icon: mdi:cloud-clock-outline
+            grid_options:
+              columns: 6
+          - type: custom:mushroom-entity-card
+            entity: button.jacuzzi_j_435_refresh
+            name: Refresh now
+            icon: mdi:refresh
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.jacuzzi_j_435_refresh
+            grid_options:
+              columns: 6
+          - type: history-graph
+            title: Poll duration (24 h)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.jacuzzi_j_435_last_poll_duration
+                name: Poll duration

@@ -1,0 +1,211 @@
+# SmartTub-dashboard — alleen standaardkaarten (Nederlands)
+#
+# Plakken in: Instellingen → Dashboards → Dashboard toevoegen → Nieuw
+# dashboard vanaf nul → ⋮ → Dashboard bewerken → ⋮ → Ruwe configuratie-editor.
+# Vervang "jacuzzi_j_435" door het entiteitsvoorvoegsel van je spa (zoeken en
+# vervangen). De herinneringen verschillen per model; pas de lijst zo nodig aan.
+title: Jacuzzi
+views:
+  - title: Jacuzzi
+    path: jacuzzi
+    icon: mdi:hot-tub
+    type: sections
+    max_columns: 3
+    sections:
+      # ---------------------------------------------------------- temperature
+      - type: grid
+        cards:
+          - type: heading
+            heading: Temperatuur
+            icon: mdi:thermometer-water
+            badges:
+              - type: entity
+                entity: binary_sensor.jacuzzi_j_435_api_connection
+                show_state: true
+                color: green
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: binary_sensor.jacuzzi_j_435_api_connection
+                state: "off"
+            card:
+              type: markdown
+              content: >
+                ⚠️ **SmartTub-cloud is traag — laatst bekende data getoond.**
+                {{ states('sensor.jacuzzi_j_435_consecutive_failed_polls') }} van
+                {{ state_attr('sensor.jacuzzi_j_435_consecutive_failed_polls', 'failure_threshold') }}
+                polls mislukt, bijgewerkt
+                {{ ((now() - (states('sensor.jacuzzi_j_435_last_successful_poll') | as_datetime)).total_seconds() / 60) | round(0) | int }}
+                min geleden.
+          - type: thermostat
+            entity: climate.jacuzzi_j_435_thermostat
+            name: Water
+            features:
+              - type: climate-preset-modes
+                style: buttons
+                preset_modes:
+                  - none
+                  - eco
+                  - day
+                  - ready
+          - type: history-graph
+            title: Afgelopen 24 uur
+            hours_to_show: 24
+            entities:
+              - entity: climate.jacuzzi_j_435_thermostat
+                name: Water
+
+      # -------------------------------------------------------------- control
+      - type: grid
+        cards:
+          - type: heading
+            heading: Jets en licht
+            icon: mdi:pump
+          - type: tile
+            entity: switch.jacuzzi_j_435_jet_p1
+            name: Jets P1
+            icon: mdi:pump
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: switch.jacuzzi_j_435_jet_p2
+            name: Jets P2
+            icon: mdi:pump
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: light.jacuzzi_j_435_light_1
+            name: Licht 1
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: light.jacuzzi_j_435_light_2
+            name: Licht 2
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: switch.jacuzzi_j_435_circulation_pump
+            name: Circulatiepomp
+            icon: mdi:sync
+            grid_options:
+              columns: 12
+          - type: heading
+            heading: Status
+            heading_style: subtitle
+          - type: tile
+            entity: sensor.jacuzzi_j_435_state
+            name: Status
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: binary_sensor.jacuzzi_j_435_error
+            name: Fout
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.jacuzzi_j_435_ozone
+            name: Ozon
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.jacuzzi_j_435_uv
+            name: UV
+            grid_options:
+              columns: 6
+
+      # ---------------------------------------------- filtration & maintenance
+      - type: grid
+        cards:
+          - type: heading
+            heading: Filtratie en onderhoud
+            icon: mdi:air-filter
+          - type: tile
+            entity: sensor.jacuzzi_j_435_primary_filtration_cycle
+            name: Primaire filtratie
+            state_content:
+              - state
+              - start_hour
+              - duration
+            grid_options:
+              columns: 12
+          - type: tile
+            entity: sensor.jacuzzi_j_435_secondary_filtration_cycle
+            name: Secundaire filtratie
+            state_content:
+              - mode
+            grid_options:
+              columns: 12
+          - type: entities
+            title: Dagen tot onderhoud
+            state_color: true
+            entities:
+              - type: attribute
+                entity: binary_sensor.jacuzzi_j_435_refresh_water_reminder
+                attribute: days
+                name: Water verversen
+                suffix: d
+                icon: mdi:water-sync
+              - type: attribute
+                entity: binary_sensor.jacuzzi_j_435_proclarity_reminder
+                attribute: days
+                name: ProClarity
+                suffix: d
+                icon: mdi:filter
+              - type: attribute
+                entity: binary_sensor.jacuzzi_j_435_proclarity_depth_reminder
+                attribute: days
+                name: ProClarity diepte
+                suffix: d
+                icon: mdi:filter-variant
+              - type: attribute
+                entity: binary_sensor.jacuzzi_j_435_clearray_reminder
+                attribute: days
+                name: ClearRay
+                suffix: d
+                icon: mdi:lightbulb-on-outline
+
+      # ------------------------------------------------------- cloud & polling
+      - type: grid
+        cards:
+          - type: heading
+            heading: SmartTub-cloud
+            icon: mdi:cloud-sync-outline
+          - type: tile
+            entity: binary_sensor.jacuzzi_j_435_api_connection
+            name: API-verbinding
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: button.jacuzzi_j_435_refresh
+            name: Nu vernieuwen
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.jacuzzi_j_435_refresh
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.jacuzzi_j_435_last_successful_poll
+            name: Laatste geslaagde poll
+            grid_options:
+              columns: 6
+          - type: tile
+            entity: sensor.jacuzzi_j_435_consecutive_failed_polls
+            name: Mislukte polls op rij
+            grid_options:
+              columns: 6
+          - type: history-graph
+            title: Pollduur (24 uur)
+            hours_to_show: 24
+            entities:
+              - entity: sensor.jacuzzi_j_435_last_poll_duration
+                name: Pollduur

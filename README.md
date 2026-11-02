@@ -14,6 +14,7 @@ your hot tub available — even when the SmartTub cloud is slow.**
 [Installation](#-installation) ·
 [Features](#-features) ·
 [Configuration](#%EF%B8%8F-configuration) ·
+[Card](#-smarttub-card) ·
 [Entities](#-entities) ·
 [Examples](#-examples) ·
 [Troubleshooting](#-troubleshooting)
@@ -53,6 +54,7 @@ This integration fixes that, while keeping the **same domain and unique IDs**
 | 🔔 Reminder missing at startup | Never created | Added as soon as it appears |
 | 🩺 Visibility into the API | — | 5 diagnostic entities, repairs, diagnostics |
 | ⚙️ Tuning | — | All of the above configurable in the UI |
+| 🃏 Dashboard | — | Built-in `custom:smarttub-card` + ready-made dashboards |
 | 🌍 Translations | English | English, Dutch |
 
 All values in **bold** are defaults and can be changed in the
@@ -116,6 +118,44 @@ flowchart LR
 | Maximum poll interval while failing | 600 s | 60–3600 | Upper limit of the back-off; must be at least the poll interval |
 
 Changing options reloads the integration; no restart needed.
+
+## 🃏 SmartTub card
+
+The integration ships its own dashboard card — no extra download or Lovelace
+resource needed. It finds your spa automatically and follows your theme
+(light/dark) and language (English/Dutch).
+
+<!-- screenshots: docs/images/card-*.png -->
+
+```yaml
+type: custom:smarttub-card
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `device_id` | first spa | The spa to show (pick it in the visual editor) |
+| `variant` | `full` | `full` or `compact` |
+| `name` | spa name | Title of the card |
+| `show_filtration` | `true` | Show the filtration block |
+| `show_maintenance` | `true` | Show the maintenance reminders |
+| `show_circulation` | `false` | Add a tile for the circulation pump |
+
+What you get:
+
+- A top view of your tub: the jets light up when they run, the rim takes the
+  colour of the spa lights.
+- Water temperature, target temperature with − / + (changes are bundled into
+  one command), heating status and heat modes.
+- Tiles for jets and lights; tap to toggle, long-press or right-click for
+  details.
+- Filtration schedule and days until each maintenance task.
+- Cloud health: a banner when the cloud is slow and the card shows the last
+  known data, poll duration, failed polls and a refresh button.
+- Adapts to its width: four tiles side by side on a desktop, two on a phone.
+
+Add it via **Edit dashboard → Add card → SmartTub**, or use one of the
+[ready-made dashboards](dashboards/) (built-in cards, Mushroom, or this card;
+English and Dutch).
 
 ## 🧩 Entities
 

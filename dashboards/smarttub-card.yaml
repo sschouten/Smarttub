@@ -1,0 +1,38 @@
+# SmartTub dashboard — custom:smarttub-card (English and Dutch automatically)
+#
+# The card ships with the SmartTub (resilient) integration; no extra resource
+# or HACS frontend download needed. It finds your spa by itself, so no entity
+# IDs to replace. The card follows the Home Assistant language (English/Dutch).
+#
+# Paste into: Settings → Dashboards → Add dashboard → New dashboard from
+# scratch → ⋮ → Edit dashboard → ⋮ → Raw configuration editor.
+title: SmartTub
+views:
+  - title: SmartTub
+    path: smarttub
+    icon: mdi:hot-tub
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:smarttub-card
+            variant: full
+            grid_options:
+              columns: full
+      - type: grid
+        cards:
+          - type: custom:smarttub-card
+            variant: compact
+            grid_options:
+              columns: full
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - entity: climate.jacuzzi_j_435_thermostat
+          - type: history-graph
+            hours_to_show: 24
+            entities:
+              - entity: sensor.jacuzzi_j_435_last_poll_duration
+              - entity: sensor.jacuzzi_j_435_consecutive_failed_polls
