@@ -154,8 +154,8 @@
       "description": "The SmartTub cloud API failed {failures} polls in a row (last error: {error}). Last successful poll: {last_success}. Entities are unavailable until the API responds again; the poll interval backs off automatically. This issue disappears after the next successful poll."
     },
     "upstream_changed": {
-      "title": "SmartTub fork may no longer be needed",
-      "description": "Home Assistant {version}: {reason}. Check the release notes; if the timeout fix is included, remove `custom_components/smarttub` (or the HACS repository) and restart. Your entities and automations keep working because the domain and unique IDs are identical."
+      "title": "Built-in SmartTub integration changed",
+      "description": "Home Assistant {version}: {reason}. Check the release notes to see whether the built-in integration now handles slow SmartTub API responses. If it does and you want to switch back, remove `custom_components/smarttub` (or the HACS repository) and restart; your entities and automations keep working because the domain and unique IDs are identical."
     }
   },
   "services": {

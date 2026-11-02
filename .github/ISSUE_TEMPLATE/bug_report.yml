@@ -1,0 +1,59 @@
+name: 🐛 Bug report
+description: Something does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please check the
+        [troubleshooting section](https://github.com/sschouten/Smarttub#-troubleshooting) first.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Integration version
+      description: Settings → Devices & services → SmartTub, or the version in HACS
+      placeholder: "1.0.1"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+      placeholder: "2026.10.4"
+    validations:
+      required: true
+  - type: input
+    id: spa
+    attributes:
+      label: Spa brand and model
+      placeholder: "Jacuzzi J-435"
+  - type: textarea
+    id: stats
+    attributes:
+      label: Poll statistics
+      description: >
+        State and attributes of `sensor.<spa>_consecutive_failed_polls` and
+        `sensor.<spa>_last_poll_duration` (Developer tools → States).
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Relevant log lines, ideally with debug logging enabled for
+        `custom_components.smarttub` and `smarttub`.
+      render: text
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: >
+        Drag the diagnostics file here (Settings → Devices & services →
+        SmartTub → ⋮ → Download diagnostics). Credentials are redacted.

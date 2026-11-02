@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-11-02
+
+- Neutral wording for the "built-in integration changed" repair issue (EN/NL).
+- Documentation: extended README, issue and pull request templates,
+  contributing guide.
+
 ## 1.0.0 — 2026-11-02
 
 Initial release, based on the built-in SmartTub integration of Home Assistant

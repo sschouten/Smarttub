@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation and troubleshooting
+    url: https://github.com/sschouten/Smarttub#-troubleshooting
+    about: Installation, options, entities and common problems
+  - name: 🏠 Home Assistant community
+    url: https://community.home-assistant.io/
+    about: General Home Assistant questions
