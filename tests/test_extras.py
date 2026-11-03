@@ -2,6 +2,7 @@
 
 import datetime as dt
 from unittest.mock import AsyncMock, patch
+from zoneinfo import ZoneInfo
 
 import aiohttp
 import pytest
@@ -150,7 +151,10 @@ async def test_clock_offset_and_sync(
     offset = hass.states.get(f"sensor.{PREFIX}_clock_offset")
     assert offset.state == "60"
 
-    with patch("homeassistant.util.dt.now", return_value=now.astimezone()):
+    with patch(
+        "homeassistant.util.dt.now",
+        return_value=now.astimezone(ZoneInfo("Europe/Amsterdam")),
+    ):
         await hass.services.async_call(
             "button",
             "press",
