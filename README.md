@@ -181,6 +181,7 @@ for a spa named *Jacuzzi J-435*; names follow your spa):
 | `button.<spa>_refresh` | Button | Poll the API right now |
 | `sensor.<spa>_cellular_signal_strength` / `_quality` | Number | Cellular signal of spas with a cellular link (network and country as attributes) |
 | `sensor.<spa>_last_wi_fi_connection` | Timestamp | When the spa was last connected through Wi-Fi |
+| `sensor.<spa>_energy_today` / `_energy_yesterday` / `_energy_this_month` | Energy (kWh) | Energy usage as shown in the SmartTub app (estimates based on 240 V, UTC days); *today* and *this month* work in the Energy dashboard |
 | `sensor.<spa>_clock_offset` | Duration (min) | How far the spa clock is ahead (+) or behind (−) Home Assistant; the spa clock as attribute |
 | `button.<spa>_sync_clock` | Button | Set the spa clock to Home Assistant's time |
 | `lock.<spa>_temperature_lock`, `lock.<spa>_spa_lock` | Lock | The spa's control locks (access/maintenance locks are disabled by default) |
@@ -206,8 +207,13 @@ data:
 
 ### Energy usage
 
-The action `smarttub.get_energy_usage` returns the energy usage the SmartTub
-cloud reports, per day (default: last 7 days) or per month:
+The energy sensors show the energy usage the SmartTub app shows. The cloud
+reports it in 1/22 kWh; the integration converts it to kWh (verified against
+the app). Days and months are in UTC, so *today* starts at 01:00 in the
+Netherlands in winter.
+
+The action `smarttub.get_energy_usage` returns the buckets per day (default:
+last 7 days) or per month, with `kwh` for each:
 
 ```yaml
 action: smarttub.get_energy_usage

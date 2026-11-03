@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.0 — 2026-11-03
+
+- New: energy sensors *Energy today*, *Energy yesterday* and *Energy this
+  month* (kWh), fetched every 30 minutes. *Today* and *this month* can be added
+  to the Energy dashboard. The SmartTub cloud reports energy in 1/22 kWh; the
+  values match the SmartTub app ("estimates based on 240 V", UTC days).
+- `smarttub.get_energy_usage` returns `kwh` for every bucket.
+- Confirmed: setting the spa clock (1.4.1) works; it has minute resolution.
+
 ## 1.4.1 — 2026-11-03
 
 - Fix: setting the spa clock failed with *405 Method Not Allowed*.
