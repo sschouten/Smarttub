@@ -76,6 +76,8 @@ async def test_unique_ids_unchanged(
     assert unique_ids - UPSTREAM_UNIQUE_IDS == {
         ("binary_sensor", "mockspa1-api_connection"),
         ("button", "mockspa1-refresh"),
+        ("button", "mockspa1-sync_clock"),
+        ("sensor", "mockspa1-clock_offset"),
         ("sensor", "mockspa1-consecutive_failed_polls"),
         ("sensor", "mockspa1-last_poll_duration"),
         ("sensor", "mockspa1-last_successful_poll"),

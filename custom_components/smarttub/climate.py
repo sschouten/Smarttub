@@ -215,3 +215,7 @@ class SmartTubThermostat(SmartTubEntity, ClimateEntity):
             ATTR_END_DATE: end.isoformat(),
             "buckets": buckets,
         }
+
+    async def async_set_date_time(self, date=None, time=None) -> None:
+        """Set the spa clock; without date and time sync with Home Assistant."""
+        await self.controller.async_set_date_time(self.spa, date, time)

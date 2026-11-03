@@ -11,12 +11,14 @@ import smarttub
 
 from ._compat import vol
 from .const import (
+    ATTR_DATE,
     ATTR_DURATION,
     ATTR_END_DATE,
     ATTR_INTERVAL,
     ATTR_REMINDER_DAYS,
     ATTR_START_DATE,
     ATTR_START_HOUR,
+    ATTR_TIME,
     DOMAIN,
 )
 
@@ -57,6 +59,11 @@ GET_ENERGY_USAGE_SCHEMA: VolDictType = {
     ),
     vol.Optional(ATTR_START_DATE): cv.date,
     vol.Optional(ATTR_END_DATE): cv.date,
+}
+
+SET_DATE_TIME_SCHEMA: VolDictType = {
+    vol.Optional(ATTR_DATE): cv.date,
+    vol.Optional(ATTR_TIME): cv.time,
 }
 
 
@@ -104,4 +111,12 @@ def async_setup_services(hass: HomeAssistant) -> None:
         schema=GET_ENERGY_USAGE_SCHEMA,
         func="async_get_energy_usage",
         supports_response=SupportsResponse.ONLY,
+    )
+    service.async_register_platform_entity_service(
+        hass,
+        DOMAIN,
+        "set_date_time",
+        entity_domain=CLIMATE_DOMAIN,
+        schema=SET_DATE_TIME_SCHEMA,
+        func="async_set_date_time",
     )

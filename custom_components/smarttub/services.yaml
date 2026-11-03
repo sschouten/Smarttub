@@ -87,3 +87,16 @@ get_energy_usage:
     end_date:
       selector:
         date:
+
+set_date_time:
+  target:
+    entity:
+      integration: smarttub
+      domain: climate
+  fields:
+    date:
+      selector:
+        date:
+    time:
+      selector:
+        time:

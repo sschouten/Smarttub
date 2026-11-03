@@ -47,7 +47,8 @@
           "aux_timeout": "Time-out herinneringen/fouten",
           "command_timeout": "Commando-time-out",
           "failure_threshold": "Mislukte polls voor onbeschikbaar",
-          "max_backoff": "Maximaal pollinterval bij storing"
+          "max_backoff": "Maximaal pollinterval bij storing",
+          "auto_clock_sync": "Klok van de spa gelijk houden"
         },
         "data_description": {
           "scan_interval": "Seconden tussen polls als de API gezond is.",
@@ -55,7 +56,8 @@
           "aux_timeout": "Seconden voor de herinneringen- en foutenaanroep. Bij mislukken blijven de laatst bekende waarden staan.",
           "command_timeout": "Seconden voor een commando (jets, licht, temperatuur) inclusief bevestiging.",
           "failure_threshold": "De laatste goede data blijft staan tot zoveel polls op rij mislukt zijn. 1 = gedrag van de ingebouwde integratie.",
-          "max_backoff": "Zolang de API faalt, verdubbelt het pollinterval tot deze waarde."
+          "max_backoff": "Zolang de API faalt, verdubbelt het pollinterval tot deze waarde.",
+          "auto_clock_sync": "Zet de klok van de spa automatisch gelijk als die 3 minuten of meer afwijkt van Home Assistant (bijv. na de overgang naar zomer- of wintertijd). Het filtratieschema loopt op de klok van de spa."
         }
       }
     }
@@ -81,6 +83,9 @@
     "button": {
       "refresh": {
         "name": "Vernieuwen"
+      },
+      "sync_clock": {
+        "name": "Klok gelijkzetten"
       }
     },
     "climate": {
@@ -163,6 +168,9 @@
       },
       "last_wifi_connection": {
         "name": "Laatste wifi-verbinding"
+      },
+      "clock_offset": {
+        "name": "Klokafwijking"
       }
     },
     "switch": {
@@ -255,6 +263,20 @@
         "end_date": {
           "name": "Einddatum",
           "description": "Laatste dag (standaard: vandaag)."
+        }
+      }
+    },
+    "set_date_time": {
+      "name": "Datum en tijd instellen",
+      "description": "Stelt de klok van de spa in. Zonder datum en tijd wordt hij gelijkgezet met Home Assistant.",
+      "fields": {
+        "date": {
+          "name": "Datum",
+          "description": "In te stellen datum (standaard: vandaag)."
+        },
+        "time": {
+          "name": "Tijd",
+          "description": "In te stellen tijd (standaard: nu)."
         }
       }
     }

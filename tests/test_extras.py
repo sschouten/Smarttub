@@ -1,7 +1,7 @@
 """Tests for the extra entities and services of the SmartTub fork."""
 
 import datetime as dt
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import smarttub
@@ -133,3 +133,59 @@ async def test_get_energy_usage(hass: HomeAssistant, spa, config_entry) -> None:
         dt.date(2026, 11, 1),
         dt.date(2026, 11, 2),
     )
+
+
+async def test_clock_offset_and_sync(
+    hass: HomeAssistant, spa, spa_state, config_entry
+) -> None:
+    """The spa clock offset is shown and can be synced."""
+    await hass.config.async_set_time_zone("Europe/Amsterdam")
+    now = dt.datetime(2026, 11, 3, 7, 55, 30, tzinfo=dt.UTC)  # 08:55 local
+    spa_state.date = dt.datetime(2026, 11, 3)
+    spa_state.time = dt.time(9, 55, 31)  # one hour ahead (missed DST change)
+    with patch("homeassistant.util.dt.utcnow", return_value=now):
+        await _setup(hass, config_entry)
+
+    offset = hass.states.get(f"sensor.{PREFIX}_clock_offset")
+    assert offset.state == "60"
+
+    with patch("homeassistant.util.dt.now", return_value=now.astimezone()):
+        await hass.services.async_call(
+            "button",
+            "press",
+            {"entity_id": f"button.{PREFIX}_sync_clock"},
+            blocking=True,
+        )
+    spa.set_date_time.assert_awaited_once()
+
+    await hass.services.async_call(
+        DOMAIN,
+        "set_date_time",
+        {
+            "entity_id": f"climate.{PREFIX}_thermostat",
+            "date": "2026-11-04",
+            "time": "12:30:00",
+        },
+        blocking=True,
+    )
+    spa.set_date_time.assert_awaited_with(
+        date=dt.date(2026, 11, 4), time=dt.time(12, 30)
+    )
+
+
+async def test_auto_clock_sync(hass: HomeAssistant, spa, spa_state, account) -> None:
+    """With the option enabled an off clock is corrected after a poll."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={"email": "test-email", "password": "test-password"},
+        options={"auto_clock_sync": True},
+        unique_id=account.id,
+    )
+    await hass.config.async_set_time_zone("Europe/Amsterdam")
+    spa_state.date = dt.datetime(2026, 11, 3)
+    spa_state.time = dt.time(9, 55, 31)
+    now = dt.datetime(2026, 11, 3, 7, 55, 30, tzinfo=dt.UTC)
+    with patch("homeassistant.util.dt.utcnow", return_value=now):
+        await _setup(hass, entry)
+        await hass.async_block_till_done()
+    spa.set_date_time.assert_awaited_once()

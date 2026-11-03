@@ -116,6 +116,7 @@ flowchart LR
 | Command timeout | 45 s | 5–180 | Time allowed for a command, including the confirmation |
 | Failed polls before unavailable | 5 | 1–30 | Last good data is kept until this many polls in a row failed. `1` = built-in behaviour |
 | Maximum poll interval while failing | 600 s | 60–3600 | Upper limit of the back-off; must be at least the poll interval |
+| Keep the spa clock in sync | off | on/off | Corrects the spa clock when it is 3+ minutes off (at most once an hour) |
 
 Changing options reloads the integration; no restart needed.
 
@@ -180,10 +181,28 @@ for a spa named *Jacuzzi J-435*; names follow your spa):
 | `button.<spa>_refresh` | Button | Poll the API right now |
 | `sensor.<spa>_cellular_signal_strength` / `_quality` | Number | Cellular signal of spas with a cellular link (network and country as attributes) |
 | `sensor.<spa>_last_wi_fi_connection` | Timestamp | When the spa was last connected through Wi-Fi |
+| `sensor.<spa>_clock_offset` | Duration (min) | How far the spa clock is ahead (+) or behind (−) Home Assistant; the spa clock as attribute |
+| `button.<spa>_sync_clock` | Button | Set the spa clock to Home Assistant's time |
 | `lock.<spa>_temperature_lock`, `lock.<spa>_spa_lock` | Lock | The spa's control locks (access/maintenance locks are disabled by default) |
 
 These diagnostic entities stay available while polling fails, so you can
 always see what is going on.
+
+### Spa clock
+
+The filtration schedule runs on the spa's own clock, which does not follow
+daylight saving time. Check `sensor.<spa>_clock_offset`, press
+**Sync clock**, enable **Keep the spa clock in sync** in the options, or set
+it yourself:
+
+```yaml
+action: smarttub.set_date_time
+target:
+  entity_id: climate.jacuzzi_j_435_thermostat
+data:
+  date: "2026-11-03"
+  time: "11:30:00"
+```
 
 ### Energy usage
 

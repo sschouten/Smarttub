@@ -13,7 +13,7 @@ Resilient fork of the built-in Home Assistant SmartTub controller:
 
 import asyncio
 from collections.abc import Callable, Coroutine
-from datetime import datetime, timedelta
+from datetime import date, datetime, time as dt_time, timedelta
 import hashlib
 import logging
 from pathlib import Path
@@ -48,6 +48,9 @@ from .const import (
     ATTR_STATUS,
     BACKOFF_JITTER,
     BUILT_AGAINST_HA,
+    CLOCK_SYNC_COOLDOWN,
+    CLOCK_SYNC_THRESHOLD,
+    CONF_AUTO_CLOCK_SYNC,
     CONF_AUX_TIMEOUT,
     CONF_COMMAND_TIMEOUT,
     CONF_FAILURE_THRESHOLD,
@@ -112,6 +115,7 @@ class SmartTubController:
         self.aux_failures: dict[str, int] = {ATTR_REMINDERS: 0, ATTR_ERRORS: 0}
         self.last_error: str | None = None
         self.holding_stale_data = False
+        self.last_clock_sync: dict[str, float] = {}
 
     # ------------------------------------------------------------------ options
 
@@ -147,6 +151,11 @@ class SmartTubController:
     def failure_threshold(self) -> int:
         """Return the number of consecutive failures before going unavailable."""
         return int(self.options[CONF_FAILURE_THRESHOLD])
+
+    @property
+    def auto_clock_sync(self) -> bool:
+        """Return True if the spa clock is kept in sync automatically."""
+        return bool(self.options[CONF_AUTO_CLOCK_SYNC])
 
     @property
     def max_backoff(self) -> int:
@@ -228,6 +237,8 @@ class SmartTubController:
                     raise result
                 data[spa.id] = result
             self._record_success(started)
+            if self.auto_clock_sync:
+                self._hass.async_create_task(self._async_auto_clock_sync(data))
         except LoginFailed as err:
             self._record_failure(err)
             raise ConfigEntryAuthFailed from err
@@ -418,6 +429,69 @@ class SmartTubController:
             if getattr(self, "coordinator", None) is not None:
                 await self.coordinator.async_request_refresh()
         return True
+
+    # ------------------------------------------------------------------- clock
+
+    def spa_clock(
+        self, spa_id: str, data: dict[str, Any] | None = None
+    ) -> datetime | None:
+        """Return the spa's clock (local time) as of the last poll."""
+        if data is None:
+            data = self.coordinator.data
+        data = (data or {}).get(spa_id) or {}
+        status = data.get(ATTR_STATUS)
+        spa_date = getattr(status, "date", None)
+        spa_time = getattr(status, "time", None)
+        if spa_date is None or spa_time is None:
+            return None
+        naive = datetime.combine(
+            spa_date.date() if isinstance(spa_date, datetime) else spa_date,
+            spa_time.replace(microsecond=0),
+        )
+        return naive.replace(tzinfo=dt_util.get_default_time_zone())
+
+    def clock_offset(
+        self, spa_id: str, data: dict[str, Any] | None = None
+    ) -> int | None:
+        """Return how many minutes the spa clock is ahead (+) or behind (-).
+
+        Measured against the time of the last successful poll, when the spa
+        reported its clock.
+        """
+        spa_clock = self.spa_clock(spa_id, data)
+        if spa_clock is None or self.last_success is None:
+            return None
+        return round((spa_clock - self.last_success).total_seconds() / 60)
+
+    async def async_set_date_time(
+        self,
+        spa: Spa,
+        date_value: date | None = None,
+        time_value: dt_time | None = None,
+    ) -> None:
+        """Set the spa clock; without arguments sync it with Home Assistant."""
+        if date_value is None and time_value is None:
+            now = dt_util.now()
+            date_value, time_value = now.date(), now.time().replace(microsecond=0)
+        await self.async_command(
+            spa.set_date_time(date=date_value, time=time_value), "set date and time"
+        )
+        self.last_clock_sync[spa.id] = time.monotonic()
+
+    async def _async_auto_clock_sync(self, data: dict[str, Any]) -> None:
+        """Correct spa clocks that are off (e.g. after a DST change)."""
+        for spa in self.spas:
+            offset = self.clock_offset(spa.id, data)
+            if offset is None or abs(offset) < CLOCK_SYNC_THRESHOLD:
+                continue
+            last = self.last_clock_sync.get(spa.id)
+            if last is not None and time.monotonic() - last < CLOCK_SYNC_COOLDOWN:
+                continue
+            _LOGGER.info("SmartTub clock of %s is %s min off, syncing", spa.id, offset)
+            try:
+                await self.async_set_date_time(spa)
+            except HomeAssistantError as err:
+                _LOGGER.warning("Could not sync the SmartTub clock: %s", err)
 
     # --------------------------------------------------------------- listeners
 

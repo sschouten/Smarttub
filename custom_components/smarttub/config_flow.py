@@ -13,6 +13,7 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -21,6 +22,7 @@ from smarttub import LoginFailed
 
 from ._compat import vol
 from .const import (
+    CONF_AUTO_CLOCK_SYNC,
     CONF_AUX_TIMEOUT,
     CONF_COMMAND_TIMEOUT,
     CONF_FAILURE_THRESHOLD,
@@ -133,7 +135,10 @@ class SmartTubOptionsFlow(OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            values = {key: int(value) for key, value in user_input.items()}
+            values = {
+                key: bool(value) if key == CONF_AUTO_CLOCK_SYNC else int(value)
+                for key, value in user_input.items()
+            }
             if values[CONF_MAX_BACKOFF] < values[CONF_SCAN_INTERVAL]:
                 errors[CONF_MAX_BACKOFF] = "max_backoff_too_low"
             else:
@@ -142,18 +147,20 @@ class SmartTubOptionsFlow(OptionsFlow):
         current = {**DEFAULT_OPTIONS, **self.config_entry.options}
         if user_input is not None:
             current.update(user_input)
-        schema = vol.Schema(
-            {
-                vol.Required(key, default=current[key]): NumberSelector(
-                    NumberSelectorConfig(
-                        min=low,
-                        max=high,
-                        step=1,
-                        mode=NumberSelectorMode.BOX,
-                        **({"unit_of_measurement": unit} if unit else {}),
-                    )
+        fields = {
+            vol.Required(key, default=current[key]): NumberSelector(
+                NumberSelectorConfig(
+                    min=low,
+                    max=high,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                    **({"unit_of_measurement": unit} if unit else {}),
                 )
-                for key, (low, high, unit) in OPTION_RANGES.items()
-            }
-        )
+            )
+            for key, (low, high, unit) in OPTION_RANGES.items()
+        }
+        fields[
+            vol.Required(CONF_AUTO_CLOCK_SYNC, default=current[CONF_AUTO_CLOCK_SYNC])
+        ] = BooleanSelector()
+        schema = vol.Schema(fields)
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

@@ -11,6 +11,9 @@
     "button": {
       "refresh": {
         "default": "mdi:refresh"
+      },
+      "sync_clock": {
+        "default": "mdi:clock-check-outline"
       }
     },
     "lock": {
@@ -63,6 +66,9 @@
       },
       "last_wifi_connection": {
         "default": "mdi:wifi-clock"
+      },
+      "clock_offset": {
+        "default": "mdi:clock-alert-outline"
       }
     }
   },
@@ -81,6 +87,9 @@
     },
     "get_energy_usage": {
       "service": "mdi:lightning-bolt"
+    },
+    "set_date_time": {
+      "service": "mdi:clock-edit-outline"
     }
   }
 }

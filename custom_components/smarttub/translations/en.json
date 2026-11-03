@@ -47,7 +47,8 @@
           "aux_timeout": "Reminders/errors timeout",
           "command_timeout": "Command timeout",
           "failure_threshold": "Failed polls before unavailable",
-          "max_backoff": "Maximum poll interval while failing"
+          "max_backoff": "Maximum poll interval while failing",
+          "auto_clock_sync": "Keep the spa clock in sync"
         },
         "data_description": {
           "scan_interval": "Seconds between polls when the API is healthy.",
@@ -55,7 +56,8 @@
           "aux_timeout": "Seconds allowed for the reminders and errors calls. On failure the last known values are kept.",
           "command_timeout": "Seconds allowed for a command (jets, lights, temperature) including confirmation.",
           "failure_threshold": "The last good data is kept until this many polls in a row have failed. 1 = behaviour of the built-in integration.",
-          "max_backoff": "While the API keeps failing, the poll interval doubles up to this value."
+          "max_backoff": "While the API keeps failing, the poll interval doubles up to this value.",
+          "auto_clock_sync": "Corrects the spa clock automatically when it is 3 minutes or more off from Home Assistant (e.g. after a daylight saving time change). The filtration schedule runs on the spa clock."
         }
       }
     }
@@ -81,6 +83,9 @@
     "button": {
       "refresh": {
         "name": "Refresh"
+      },
+      "sync_clock": {
+        "name": "Sync clock"
       }
     },
     "climate": {
@@ -163,6 +168,9 @@
       },
       "last_wifi_connection": {
         "name": "Last Wi-Fi connection"
+      },
+      "clock_offset": {
+        "name": "Clock offset"
       }
     },
     "switch": {
@@ -255,6 +263,20 @@
         "end_date": {
           "name": "End date",
           "description": "Last day (default: today)."
+        }
+      }
+    },
+    "set_date_time": {
+      "name": "Set date and time",
+      "description": "Sets the spa clock. Without date and time it is synced with Home Assistant.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Date to set (default: today)."
+        },
+        "time": {
+          "name": "Time",
+          "description": "Time to set (default: now)."
         }
       }
     }

@@ -57,6 +57,7 @@ async def async_setup_entry(
                 SmartTubConsecutiveFailedPolls(controller.coordinator, spa),
             ]
         )
+        entities.append(SmartTubClockOffsetSensor(controller.coordinator, spa))
         properties = controller.coordinator.data[spa.id]["status"].properties
         if isinstance(properties.get("signal"), dict):
             entities.extend(
@@ -330,3 +331,36 @@ class SmartTubLastWifiSensor(SmartTubEntity, SensorEntity):
         """Return the time of the last Wi-Fi connection."""
         last_wifi = self.spa_status.properties.get("lastWifi") or {}
         return dt_util.parse_datetime(last_wifi.get("lastConnectionTimestamp") or "")
+
+
+class SmartTubClockOffsetSensor(SmartTubEntity, SensorEntity):
+    """How far the spa clock is off from Home Assistant's time.
+
+    The filtration schedule runs on the spa clock, so an offset (e.g. a missed
+    DST change) shifts the filtration cycles.
+    """
+
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "clock_offset"
+
+    def __init__(
+        self, coordinator: DataUpdateCoordinator[dict[str, Any]], spa: smarttub.Spa
+    ) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, spa, "clock_offset")
+
+    @property
+    @override
+    def native_value(self) -> int | None:
+        """Return the offset in minutes (positive: spa clock is ahead)."""
+        return self.controller.clock_offset(self.spa.id)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the spa clock."""
+        spa_clock = self.controller.spa_clock(self.spa.id)
+        return {"spa_clock": spa_clock.isoformat() if spa_clock else None}

@@ -12,6 +12,7 @@ CONF_AUX_TIMEOUT = "aux_timeout"
 CONF_COMMAND_TIMEOUT = "command_timeout"
 CONF_FAILURE_THRESHOLD = "failure_threshold"
 CONF_MAX_BACKOFF = "max_backoff"
+CONF_AUTO_CLOCK_SYNC = "auto_clock_sync"
 
 # seconds between polls
 SCAN_INTERVAL = 60
@@ -26,6 +27,12 @@ COMMAND_TIMEOUT = 45
 FAILURE_THRESHOLD = 5
 # upper bound (seconds) for the poll interval while the API keeps failing
 MAX_BACKOFF = 600
+# keep the spa clock in sync with Home Assistant (e.g. after a DST change)
+AUTO_CLOCK_SYNC = False
+# clock offset (minutes) from which the automatic sync corrects the spa clock
+CLOCK_SYNC_THRESHOLD = 3
+# minimum time between two automatic clock syncs
+CLOCK_SYNC_COOLDOWN = 3600
 # random extra delay (fraction of the interval) to spread load on the cloud API
 BACKOFF_JITTER = 0.1
 
@@ -36,6 +43,7 @@ DEFAULT_OPTIONS = {
     CONF_COMMAND_TIMEOUT: COMMAND_TIMEOUT,
     CONF_FAILURE_THRESHOLD: FAILURE_THRESHOLD,
     CONF_MAX_BACKOFF: MAX_BACKOFF,
+    CONF_AUTO_CLOCK_SYNC: AUTO_CLOCK_SYNC,
 }
 
 # kept for backwards compatibility with code that imports it
@@ -69,6 +77,9 @@ ATTR_REMINDER_DAYS = "days"
 ATTR_INTERVAL = "interval"
 ATTR_START_DATE = "start_date"
 ATTR_END_DATE = "end_date"
+# date/time service
+ATTR_DATE = "date"
+ATTR_TIME = "time"
 
 # --- Repairs ----------------------------------------------------------------
 

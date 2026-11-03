@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 — 2026-11-03
+
+- New: *Clock offset* sensor — how many minutes the spa clock is ahead or
+  behind Home Assistant. The filtration schedule runs on the spa clock, so a
+  missed daylight saving time change shifts the filtration cycles.
+- New: *Sync clock* button — sets the spa clock to Home Assistant's time.
+- New: action `smarttub.set_date_time` — set the spa date and/or time
+  manually; without data it syncs with Home Assistant.
+- New option *Keep the spa clock in sync* (off by default): corrects the spa
+  clock automatically when it is 3 minutes or more off (at most once an hour).
+
 ## 1.3.0 — 2026-11-03
 
 Adopted from Home Assistant 2026.11:
