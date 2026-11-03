@@ -217,9 +217,16 @@ class SmartTubController:
         self.total_polls += 1
 
         try:
+            # poll all spas concurrently (as upstream does since 2026.11)
+            results = await asyncio.gather(
+                *(self._get_spa_data(spa) for spa in self.spas),
+                return_exceptions=True,
+            )
             data = {}
-            for spa in self.spas:
-                data[spa.id] = await self._get_spa_data(spa)
+            for spa, result in zip(self.spas, results, strict=True):
+                if isinstance(result, BaseException):
+                    raise result
+                data[spa.id] = result
             self._record_success(started)
         except LoginFailed as err:
             self._record_failure(err)
@@ -254,17 +261,18 @@ class SmartTubController:
     async def _get_spa_data(self, spa: Spa) -> dict[str, Any]:
         """Fetch the data for one spa.
 
-        fullStatus is leading. reminders/errors are fetched concurrently with
-        their own timeout; on failure the last known values are kept.
+        fullStatus is leading. reminders are fetched concurrently with their
+        own timeout; on failure the last known values are kept. The error
+        details are only fetched while the spa reports an error code (as
+        upstream does since 2026.11): it is often the slowest call.
         """
         previous: dict[str, Any] = {}
         if getattr(self, "coordinator", None) is not None and self.coordinator.data:
             previous = self.coordinator.data.get(spa.id) or {}
 
-        full_status, reminders, errors = await asyncio.gather(
+        full_status, reminders = await asyncio.gather(
             self._timed(ATTR_STATUS, spa.get_status_full(), self.poll_timeout),
             self._timed(ATTR_REMINDERS, spa.get_reminders(), self.aux_timeout),
-            self._timed(ATTR_ERRORS, spa.get_errors(), self.aux_timeout),
             return_exceptions=True,
         )
         if isinstance(full_status, BaseException):
@@ -275,10 +283,16 @@ class SmartTubController:
         else:
             reminders_map = {reminder.id: reminder for reminder in reminders}
 
-        if isinstance(errors, BaseException):
-            errors_list = self._aux_fallback(ATTR_ERRORS, errors, previous, [])
+        errors_list: list[Any] = []
+        if getattr(full_status, "error_code", None):
+            try:
+                errors_list = await self._timed(
+                    ATTR_ERRORS, spa.get_errors(), self.aux_timeout
+                )
+            except POLL_ERRORS as err:
+                errors_list = self._aux_fallback(ATTR_ERRORS, err, previous, [])
         else:
-            errors_list = errors
+            self.last_call_durations.pop(ATTR_ERRORS, None)
 
         return {
             ATTR_STATUS: full_status,

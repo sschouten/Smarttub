@@ -98,6 +98,8 @@ async def test_aux_failure_keeps_last_values(
     reminder = f"binary_sensor.{PREFIX}_myfilter_reminder"
     assert hass.states.get(reminder).attributes["days"] == 2
 
+    # error details are only fetched while the spa reports an error code
+    (await spa.get_status_full()).error_code = 11
     spa.get_reminders.side_effect = TimeoutError
     spa.get_errors.side_effect = APIError("boom")
     await _refresh(hass, config_entry)
@@ -107,6 +109,19 @@ async def test_aux_failure_keeps_last_values(
     assert controller.aux_failures == {"reminders": 1, "errors": 1}
     assert hass.states.get(reminder).attributes["days"] == 2
     assert hass.states.get(CLIMATE).state != STATE_UNAVAILABLE
+
+
+async def test_errors_only_fetched_with_error_code(
+    hass: HomeAssistant, spa, config_entry, setup_entry
+) -> None:
+    """Without an error code the (slow) errors endpoint is not called."""
+    spa.get_errors.reset_mock()
+    await _refresh(hass, config_entry)
+    spa.get_errors.assert_not_called()
+
+    (await spa.get_status_full()).error_code = 11
+    await _refresh(hass, config_entry)
+    spa.get_errors.assert_called_once()
 
 
 async def test_slow_aux_call_is_cut_off(

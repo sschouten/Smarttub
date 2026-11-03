@@ -85,7 +85,18 @@
     },
     "climate": {
       "thermostat": {
-        "name": "Thermostat"
+        "name": "Thermostat",
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "none": "Auto",
+              "eco": "Eco",
+              "day": "Dag",
+              "ready": "Klaar",
+              "rest": "Rust"
+            }
+          }
+        }
       }
     },
     "light": {

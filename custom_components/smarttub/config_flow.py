@@ -20,6 +20,9 @@ from homeassistant.helpers.selector import (
 from smarttub import LoginFailed
 
 from ._compat import vol
+
+# probatio marks secret fields (e.g. redacted in logs); voluptuous has no Secret
+_secret = getattr(vol, "Secret", lambda key: key)
 from .const import (
     CONF_AUX_TIMEOUT,
     CONF_COMMAND_TIMEOUT,
@@ -43,7 +46,7 @@ OPTION_RANGES: dict[str, tuple[int, int, str | None]] = {
 }
 
 DATA_SCHEMA = vol.Schema(
-    {vol.Required(CONF_EMAIL): str, vol.Required(CONF_PASSWORD): str}
+    {vol.Required(CONF_EMAIL): str, vol.Required(_secret(CONF_PASSWORD)): str}
 )
 
 
@@ -111,7 +114,7 @@ class SmartTubConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_EMAIL,
                         default=self._get_reauth_entry().data.get(CONF_EMAIL),
                     ): str,
-                    vol.Required(CONF_PASSWORD): str,
+                    vol.Required(_secret(CONF_PASSWORD)): str,
                 }
             )
             return self.async_show_form(

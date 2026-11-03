@@ -8,6 +8,7 @@ from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN
 from .controller import SmartTubConfigEntry, SmartTubController
 from .frontend import async_register_card
+from .services import async_setup_services
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -22,7 +23,8 @@ PLATFORMS = [
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the SmartTub card for all dashboards."""
+    """Register the services and the SmartTub card."""
+    async_setup_services(hass)
     await async_register_card(hass)
     return True
 

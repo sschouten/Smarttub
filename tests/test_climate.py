@@ -104,3 +104,14 @@ async def test_thermostat_api_error(spa, setup_entry, hass: HomeAssistant) -> No
     spa.get_status_full.side_effect = smarttub.APIError
     await trigger_update(hass)
     # should not fail
+
+
+async def test_thermostat_rest_mode(spa, spa_state, setup_entry, hass) -> None:
+    """A spa in REST mode is shown, not a crash (unmapped upstream)."""
+    spa_state.heat_mode = smarttub.Spa.HeatMode.REST
+    await hass.config_entries.async_entries("smarttub")[0].runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    state = hass.states.get(f"climate.{spa.brand}_{spa.model}_thermostat")
+    assert state.attributes["preset_mode"] == "rest"
+    assert "rest" in state.attributes["preset_modes"]

@@ -22,12 +22,20 @@ from .entity import SmartTubEntity
 
 PRESET_DAY = "day"
 PRESET_READY = "ready"
+PRESET_REST = "rest"
+
+# Home Assistant 2026.11 introduced the native_* temperature API for climate
+# entities; the old names are deprecated there. Use whichever this release has.
+NATIVE_TEMPERATURE_API = "native_current_temperature" in dir(ClimateEntity)
 
 PRESET_MODES = {
     Spa.HeatMode.AUTO: PRESET_NONE,
     Spa.HeatMode.ECONOMY: PRESET_ECO,
     Spa.HeatMode.DAY: PRESET_DAY,
     Spa.HeatMode.READY: PRESET_READY,
+    # known to the library but not mapped upstream, which made the entity
+    # crash while the spa was in this mode
+    Spa.HeatMode.REST: PRESET_REST,
 }
 
 HEAT_MODES = {v: k for k, v in PRESET_MODES.items()}
@@ -67,10 +75,9 @@ class SmartTubThermostat(SmartTubEntity, ClimateEntity):
     _attr_supported_features = (
         ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TARGET_TEMPERATURE
     )
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = DEFAULT_MIN_TEMP
     _attr_max_temp = DEFAULT_MAX_TEMP
-    _attr_preset_modes = list(PRESET_MODES.values())
+    _attr_preset_modes = [PRESET_NONE, PRESET_ECO, PRESET_DAY, PRESET_READY]
     _attr_translation_key = "thermostat"
 
     def __init__(
@@ -100,22 +107,51 @@ class SmartTubThermostat(SmartTubEntity, ClimateEntity):
     def preset_mode(self) -> str:
         """Return the current preset mode."""
         return self._optimistic_or(
-            "preset_mode", PRESET_MODES[self.spa_status.heat_mode]
+            "preset_mode", PRESET_MODES.get(self.spa_status.heat_mode)
         )
 
     @property
     @override
-    def current_temperature(self) -> float | None:
-        """Return the current water temperature."""
+    def preset_modes(self) -> list[str]:
+        """Return the presets; "rest" only while the spa is in that mode."""
+        modes = list(self._attr_preset_modes)
+        if self.preset_mode == PRESET_REST:
+            modes.append(PRESET_REST)
+        return modes
+
+    def _water_temperature(self) -> float | None:
         return self.spa_status.water.temperature
 
-    @property
-    @override
-    def target_temperature(self) -> float | None:
-        """Return the target water temperature."""
+    def _set_temperature(self) -> float | None:
         return self._optimistic_or(
             "target_temperature", self.spa_status.set_temperature
         )
+
+    if NATIVE_TEMPERATURE_API:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+
+        @property
+        def native_current_temperature(self) -> float | None:
+            """Return the current water temperature."""
+            return self._water_temperature()
+
+        @property
+        def native_target_temperature(self) -> float | None:
+            """Return the target water temperature."""
+            return self._set_temperature()
+
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
+
+        @property
+        def current_temperature(self) -> float | None:
+            """Return the current water temperature."""
+            return self._water_temperature()
+
+        @property
+        def target_temperature(self) -> float | None:
+            """Return the target water temperature."""
+            return self._set_temperature()
 
     @override
     async def async_set_temperature(self, **kwargs: Any) -> None:
