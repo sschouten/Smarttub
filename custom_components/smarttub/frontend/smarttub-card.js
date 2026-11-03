@@ -13,7 +13,7 @@
  *   show_circulation: false
  */
 
-const CARD_VERSION = "1.1.1";
+const CARD_VERSION = "1.2.0";
 
 const STRINGS = {
   en: {
@@ -153,6 +153,19 @@ const EFFECT_COLORS = {
   amber: "#f2b33d",
 };
 const DEFAULT_LIGHT_COLOR = "#7fd3e0";
+// effects in which the spa cycles through colours by itself
+const CYCLE_EFFECTS = new Set([
+  "colorloop", "color_wheel", "high_speed_wheel", "low_speed_wheel", "full_dynamic_rgb", "party",
+]);
+const RAINBOW = ["#9b6bff", "#4f8ef7", "#3fc8c8", "#57c27a", "#e8c547", "#f29a45", "#e5534b", "#9b6bff"];
+
+function reducedMotion() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (_err) {
+    return false;
+  }
+}
 
 const DEFAULTS = {
   variant: "full",
@@ -496,8 +509,10 @@ class SmartTubCard extends HTMLElement {
     const lightsOn = e.lights
       .map((id) => this._st(id))
       .filter((st) => st?.state === "on" && st.attributes?.zone_type !== "exterior");
+    const lightEffect = lightsOn.length ? lightsOn[0].attributes.effect : null;
+    const lightCycling = CYCLE_EFFECTS.has(lightEffect);
     const lightColor = lightsOn.length
-      ? EFFECT_COLORS[lightsOn[0].attributes.effect] || DEFAULT_LIGHT_COLOR
+      ? EFFECT_COLORS[lightEffect] || DEFAULT_LIGHT_COLOR
       : null;
     const api = this._st(e.api);
     const failed = this._st(e.failedPolls);
@@ -507,7 +522,7 @@ class SmartTubCard extends HTMLElement {
     if (!available) cloud = "down";
     const jetOn = e.jets.map((id) => this._st(id)?.state === "on");
     return {
-      climate, available, attrs, target, current, heating, lightColor, api, failed,
+      climate, available, attrs, target, current, heating, lightColor, lightCycling, api, failed,
       lastSuccess: lastSuccess && lastSuccess !== "unknown" ? lastSuccess : climate?.last_updated,
       cloud, jetOn,
       title: this._config.name || e.deviceName,
@@ -579,12 +594,21 @@ class SmartTubCard extends HTMLElement {
   }
 
   _tub(m, e, size) {
-    const rim = m.lightColor || "var(--st-water-line)";
+    const rim = m.lightCycling ? "url(#st-rainbow)" : m.lightColor || "var(--st-water-line)";
+    const spin = reducedMotion()
+      ? ""
+      : '<animateTransform attributeName="gradientTransform" type="rotate" from="0 0.5 0.5" to="360 0.5 0.5" dur="6s" repeatCount="indefinite"/>';
+    const defs = m.lightCycling
+      ? `<defs><linearGradient id="st-rainbow" x1="0" y1="0" x2="1" y2="1">${RAINBOW.map(
+          (c, i) => `<stop offset="${(i / (RAINBOW.length - 1)).toFixed(3)}" stop-color="${c}"/>`
+        ).join("")}${spin}</linearGradient></defs>`
+      : "";
     const jet = (on) => (on ? "var(--st-jet-on)" : "var(--st-jet-off)");
     const left = jet(m.jetOn[0]);
     const right = jet(m.jetOn[1] ?? m.jetOn[0]);
     return `<svg class="tub" width="${size}" height="${size}" viewBox="0 0 200 200" role="img"
       aria-label="${esc(m.title)}" data-action="more-info" data-entity="${esc(e.climate)}">
+      ${defs}
       <rect x="6" y="6" width="188" height="188" rx="34" class="shell"/>
       <rect x="24" y="24" width="152" height="152" rx="24" class="water" style="stroke:${rim}" stroke-width="${m.lightColor ? 4 : 2}"/>
       <circle cx="100" cy="100" r="44" class="ripple"/>
@@ -635,13 +659,14 @@ class SmartTubCard extends HTMLElement {
       const effect = st?.attributes?.effect;
       const pct = st?.attributes?.brightness ? Math.round((st.attributes.brightness / 255) * 100) : null;
       const color = EFFECT_COLORS[effect] || DEFAULT_LIGHT_COLOR;
+      const cycle = on && CYCLE_EFFECTS.has(effect) ? "cycle" : "";
       const exterior = st?.attributes?.zone_type === "exterior";
       const zone = exterior ? s.exterior : shortName(st, e.deviceName).replace(/^Light\s*/i, "") || id;
       const stateText = on
         ? [effect ? s.effects[effect] || effect.replace(/_/g, " ") : s.on, pct !== null ? pct + "%" : ""]
             .filter(Boolean).join(" ")
         : s.off;
-      tiles.push(`<button class="tile light ${on ? "on" : ""}" style="--st-light:${color}" data-action="light"
+      tiles.push(`<button class="tile light ${on ? "on" : ""} ${cycle}" style="--st-light:${color}" data-action="light"
         data-entity="${esc(id)}" aria-pressed="${on}" ${isAvailable(st) ? "" : "disabled"}>
         <span class="t-kind">${esc(s.light)}</span><span class="t-label">${esc(zone)}</span>
         <span class="t-state">${esc(stateText)}</span></button>`);
@@ -728,7 +753,7 @@ class SmartTubCard extends HTMLElement {
     });
     if (e.lights.length) {
       const anyOn = e.lights.some((id) => this._st(id)?.state === "on");
-      buttons.push(`<button class="mini light ${anyOn ? "on" : ""}" style="--st-light:${m.lightColor || DEFAULT_LIGHT_COLOR}"
+      buttons.push(`<button class="mini light ${anyOn ? "on" : ""} ${anyOn && m.lightCycling ? "cycle" : ""}" style="--st-light:${m.lightColor || DEFAULT_LIGHT_COLOR}"
         data-action="light" data-entity="${esc(e.lights[0])}" aria-pressed="${anyOn}">${esc(s.light)}</button>`);
     }
     const sub = m.heating
@@ -825,6 +850,18 @@ const STYLE = `<style>
   .mini.on { border-color: color-mix(in srgb, var(--st-accent) 55%, transparent); background: color-mix(in srgb, var(--st-accent) 18%, transparent); }
   .mini.light.on { border-color: color-mix(in srgb, var(--st-light) 55%, transparent); background: color-mix(in srgb, var(--st-light) 18%, transparent); }
   .c-buttons .pill { flex: 1.2; justify-content: center; }
+
+  .tile.light.on.cycle, .mini.light.on.cycle {
+    border-color: color-mix(in srgb, #9b6bff 55%, transparent);
+    background: linear-gradient(115deg, rgba(155,107,255,.24), rgba(79,142,247,.24), rgba(63,200,200,.24),
+      rgba(87,194,122,.24), rgba(232,197,71,.24), rgba(242,154,69,.24), rgba(229,83,75,.24), rgba(155,107,255,.24));
+    background-size: 300% 100%;
+    animation: st-flow 8s linear infinite;
+  }
+  @keyframes st-flow { from { background-position: 0% 50%; } to { background-position: 300% 50%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .tile.light.on.cycle, .mini.light.on.cycle { animation: none; }
+  }
 
   @container (max-width: 460px) {
     .hero { gap: 14px; }

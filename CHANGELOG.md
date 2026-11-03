@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 — 2026-11-03
+
+- Card: colour-cycling light modes (colour wheel, colour loop, party,
+  dynamic, slow/fast wheel) show a slowly rotating rainbow on the tub rim and
+  the light tile. Respects the system's reduced-motion setting.
+- Note: the SmartTub cloud reports the selected light mode, not the colour
+  that is lit at a given moment while a cycling mode runs.
+
 ## 1.1.1 — 2026-11-03
 
 - Fix: exterior light zones (e.g. corner lights) now turn on in white. They
