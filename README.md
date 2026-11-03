@@ -125,7 +125,16 @@ The integration ships its own dashboard card — no extra download or Lovelace
 resource needed. It finds your spa automatically and follows your theme
 (light/dark) and language (English/Dutch).
 
-<!-- screenshots: docs/images/card-*.png -->
+<p align="center">
+  <img src="docs/images/card-desktop-dark.png" alt="SmartTub card, full and compact variant, dark theme" width="760"><br>
+  <em>Full and compact variant (dark theme)</em>
+</p>
+<p align="center">
+  <img src="docs/images/card-mobile-nl-light.png" alt="SmartTub card on a phone, Dutch, light theme" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/images/card-cloud-slow.png" alt="SmartTub card while the cloud is slow" width="420"><br>
+  <em>Phone layout in Dutch (light theme) · cloud slow: last known data with a warning</em>
+</p>
 
 ```yaml
 type: custom:smarttub-card
