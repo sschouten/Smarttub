@@ -9,15 +9,16 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import ATTR_MODE, UnitOfTime
+from homeassistant.const import ATTR_MODE, EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 import smarttub
 
 from .const import ATTR_DURATION, ATTR_START_HOUR
 from .controller import SmartTubConfigEntry
-from .entity import SmartTubDiagnosticEntity, SmartTubOnboardSensorBase
+from .entity import SmartTubDiagnosticEntity, SmartTubEntity, SmartTubOnboardSensorBase
 
 ATTR_CYCLE_LAST_UPDATED = "cycle_last_updated"
 
@@ -56,6 +57,16 @@ async def async_setup_entry(
                 SmartTubConsecutiveFailedPolls(controller.coordinator, spa),
             ]
         )
+        properties = controller.coordinator.data[spa.id]["status"].properties
+        if isinstance(properties.get("signal"), dict):
+            entities.extend(
+                [
+                    SmartTubSignalSensor(controller.coordinator, spa, "strength"),
+                    SmartTubSignalSensor(controller.coordinator, spa, "quality"),
+                ]
+            )
+        if isinstance(properties.get("lastWifi"), dict):
+            entities.append(SmartTubLastWifiSensor(controller.coordinator, spa))
 
     async_add_entities(entities)
 
@@ -255,3 +266,67 @@ class SmartTubConsecutiveFailedPolls(SmartTubDiagnosticEntity, SensorEntity):
             "errors_failures": controller.aux_failures["errors"],
             "last_error": controller.last_error,
         }
+
+
+class SmartTubSignalSensor(SmartTubEntity, SensorEntity):
+    """Signal strength or quality of the spa's cellular connection.
+
+    The SmartTub cloud reports both as a number without a unit.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator[dict[str, Any]],
+        spa: smarttub.Spa,
+        key: str,
+    ) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, spa, f"signal_{key}")
+        self._key = key
+        self._attr_translation_key = f"signal_{key}"
+
+    @property
+    def _signal(self) -> dict[str, Any]:
+        return self.spa_status.properties.get("signal") or {}
+
+    @property
+    @override
+    def native_value(self) -> int | float | None:
+        """Return the signal value."""
+        value = self._signal.get(self._key)
+        return value if isinstance(value, int | float) else None
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return network details."""
+        signal = self._signal
+        return {
+            "network": signal.get("networkName"),
+            "country": signal.get("country"),
+            "updated": signal.get("updateAt"),
+        }
+
+
+class SmartTubLastWifiSensor(SmartTubEntity, SensorEntity):
+    """When the spa was last connected through Wi-Fi."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "last_wifi_connection"
+
+    def __init__(
+        self, coordinator: DataUpdateCoordinator[dict[str, Any]], spa: smarttub.Spa
+    ) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, spa, "last_wifi_connection")
+
+    @property
+    @override
+    def native_value(self) -> datetime | None:
+        """Return the time of the last Wi-Fi connection."""
+        last_wifi = self.spa_status.properties.get("lastWifi") or {}
+        return dt_util.parse_datetime(last_wifi.get("lastConnectionTimestamp") or "")

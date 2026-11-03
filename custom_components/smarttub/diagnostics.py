@@ -13,6 +13,10 @@ TO_REDACT = {
     CONF_EMAIL,
     CONF_PASSWORD,
     "address",
+    # GPS position of the spa (not redacted upstream)
+    "location",
+    "latitude",
+    "longitude",
     "panelSerialNumber",
     "spaId",
     "ssid",

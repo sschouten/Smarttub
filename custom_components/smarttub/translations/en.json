@@ -104,6 +104,23 @@
         "name": "Light {zone}"
       }
     },
+    "lock": {
+      "lock_temperature": {
+        "name": "Temperature lock"
+      },
+      "lock_spa": {
+        "name": "Spa lock"
+      },
+      "lock_access": {
+        "name": "Access lock"
+      },
+      "lock_maintenance": {
+        "name": "Maintenance lock"
+      },
+      "lock_tuning": {
+        "name": "Tuning lock"
+      }
+    },
     "sensor": {
       "blowout_cycle": {
         "name": "Blowout cycle"
@@ -137,6 +154,15 @@
       },
       "uv": {
         "name": "UV"
+      },
+      "signal_strength": {
+        "name": "Cellular signal strength"
+      },
+      "signal_quality": {
+        "name": "Cellular signal quality"
+      },
+      "last_wifi_connection": {
+        "name": "Last Wi-Fi connection"
       }
     },
     "switch": {
@@ -213,6 +239,24 @@
         }
       },
       "name": "Snooze a reminder"
+    },
+    "get_energy_usage": {
+      "name": "Get energy usage",
+      "description": "Returns the energy usage reported by the SmartTub cloud.",
+      "fields": {
+        "interval": {
+          "name": "Interval",
+          "description": "Day or month buckets."
+        },
+        "start_date": {
+          "name": "Start date",
+          "description": "First day (default: 6 days ago, or 12 months ago for months)."
+        },
+        "end_date": {
+          "name": "End date",
+          "description": "Last day (default: today)."
+        }
+      }
     }
   }
 }

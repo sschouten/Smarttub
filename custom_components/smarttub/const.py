@@ -65,6 +65,10 @@ ATTR_DURATION = "duration"
 ATTR_START_HOUR = "start_hour"
 # how many days to snooze the reminder for
 ATTR_REMINDER_DAYS = "days"
+# energy usage service
+ATTR_INTERVAL = "interval"
+ATTR_START_DATE = "start_date"
+ATTR_END_DATE = "end_date"
 
 # --- Repairs ----------------------------------------------------------------
 

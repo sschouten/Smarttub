@@ -20,9 +20,6 @@ from homeassistant.helpers.selector import (
 from smarttub import LoginFailed
 
 from ._compat import vol
-
-# probatio marks secret fields (e.g. redacted in logs); voluptuous has no Secret
-_secret = getattr(vol, "Secret", lambda key: key)
 from .const import (
     CONF_AUX_TIMEOUT,
     CONF_COMMAND_TIMEOUT,
@@ -34,6 +31,9 @@ from .const import (
     DOMAIN,
 )
 from .controller import SmartTubController
+
+# probatio marks secret fields (e.g. redacted in logs); voluptuous has no Secret
+_secret = getattr(vol, "Secret", lambda key: key)
 
 # option -> (min, max, unit)
 OPTION_RANGES: dict[str, tuple[int, int, str | None]] = {

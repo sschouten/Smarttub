@@ -1,5 +1,7 @@
 """Platform for climate integration."""
 
+from datetime import timedelta
+import logging
 from typing import Any, override
 
 from homeassistant.components.climate import (
@@ -11,12 +13,19 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceResponse
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 from smarttub import Spa
 
-from .const import DEFAULT_MAX_TEMP, DEFAULT_MIN_TEMP
+from .const import (
+    ATTR_END_DATE,
+    ATTR_INTERVAL,
+    ATTR_START_DATE,
+    DEFAULT_MAX_TEMP,
+    DEFAULT_MIN_TEMP,
+)
 from .controller import SmartTubConfigEntry
 from .entity import SmartTubEntity
 
@@ -46,6 +55,8 @@ HVAC_ACTIONS = {
 }
 
 PARALLEL_UPDATES = 0
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -171,3 +182,36 @@ class SmartTubThermostat(SmartTubEntity, ClimateEntity):
             self.spa.set_heat_mode(heat_mode), f"set preset {preset_mode}"
         )
         self._set_optimistic(confirmed, preset_mode=preset_mode)
+
+    async def async_get_energy_usage(
+        self,
+        interval: str = "day",
+        start_date=None,
+        end_date=None,
+    ) -> ServiceResponse:
+        """Return the energy usage reported by the SmartTub cloud."""
+        today = dt_util.now().date()
+        end = end_date or today
+        if start_date is not None:
+            start = start_date
+        elif interval == "month":
+            start = end.replace(day=1) - timedelta(days=365)
+        else:
+            start = end - timedelta(days=6)
+        usage_interval = Spa.EnergyUsageInterval[interval.upper()]
+        buckets: list[Any] = []
+
+        async def _fetch() -> None:
+            nonlocal buckets
+            buckets = await self.spa.get_energy_usage(usage_interval, start, end)
+
+        await self.controller.async_command(_fetch(), "get energy usage")
+        _LOGGER.debug(
+            "SmartTub energy usage %s %s..%s: %s", interval, start, end, buckets
+        )
+        return {
+            ATTR_INTERVAL: interval,
+            ATTR_START_DATE: start.isoformat(),
+            ATTR_END_DATE: end.isoformat(),
+            "buckets": buckets,
+        }

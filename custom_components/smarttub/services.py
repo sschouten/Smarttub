@@ -1,15 +1,24 @@
 """Services for the SmartTub integration."""
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.const import ATTR_MODE
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, SupportsResponse, callback
 from homeassistant.helpers import config_validation as cv, service
 from homeassistant.helpers.typing import VolDictType
 import smarttub
 
 from ._compat import vol
-from .const import ATTR_DURATION, ATTR_REMINDER_DAYS, ATTR_START_HOUR, DOMAIN
+from .const import (
+    ATTR_DURATION,
+    ATTR_END_DATE,
+    ATTR_INTERVAL,
+    ATTR_REMINDER_DAYS,
+    ATTR_START_DATE,
+    ATTR_START_HOUR,
+    DOMAIN,
+)
 
 # probatio offers AtLeastOne; older releases (voluptuous) use the cv helper
 _at_least_one = getattr(vol, "AtLeastOne", None) or cv.has_at_least_one_key
@@ -40,6 +49,14 @@ SET_SECONDARY_FILTRATION_SCHEMA: VolDictType = {
             for mode in smarttub.SpaSecondaryFiltrationCycle.SecondaryFiltrationMode
         }
     ),
+}
+
+GET_ENERGY_USAGE_SCHEMA: VolDictType = {
+    vol.Optional(ATTR_INTERVAL, default="day"): vol.In(
+        {interval.name.lower() for interval in smarttub.Spa.EnergyUsageInterval}
+    ),
+    vol.Optional(ATTR_START_DATE): cv.date,
+    vol.Optional(ATTR_END_DATE): cv.date,
 }
 
 
@@ -78,4 +95,13 @@ def async_setup_services(hass: HomeAssistant) -> None:
         entity_domain=SENSOR_DOMAIN,
         schema=SET_SECONDARY_FILTRATION_SCHEMA,
         func="async_set_secondary_filtration",
+    )
+    service.async_register_platform_entity_service(
+        hass,
+        DOMAIN,
+        "get_energy_usage",
+        entity_domain=CLIMATE_DOMAIN,
+        schema=GET_ENERGY_USAGE_SCHEMA,
+        func="async_get_energy_usage",
+        supports_response=SupportsResponse.ONLY,
     )

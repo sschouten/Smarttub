@@ -178,9 +178,25 @@ for a spa named *Jacuzzi J-435*; names follow your spa):
 | `sensor.<spa>_last_poll_duration` | Duration (s) | How long the last poll took. Attributes per call: `status_duration`, `reminders_duration`, `errors_duration` |
 | `sensor.<spa>_consecutive_failed_polls` | Number | Failed polls in a row. Attributes: `total_polls`, `total_failures`, `reminders_failures`, `errors_failures`, `last_error` |
 | `button.<spa>_refresh` | Button | Poll the API right now |
+| `sensor.<spa>_cellular_signal_strength` / `_quality` | Number | Cellular signal of spas with a cellular link (network and country as attributes) |
+| `sensor.<spa>_last_wi_fi_connection` | Timestamp | When the spa was last connected through Wi-Fi |
+| `lock.<spa>_temperature_lock`, `lock.<spa>_spa_lock` | Lock | The spa's control locks (access/maintenance locks are disabled by default) |
 
 These diagnostic entities stay available while polling fails, so you can
 always see what is going on.
+
+### Energy usage
+
+The action `smarttub.get_energy_usage` returns the energy usage the SmartTub
+cloud reports, per day (default: last 7 days) or per month:
+
+```yaml
+action: smarttub.get_energy_usage
+target:
+  entity_id: climate.jacuzzi_j_435_thermostat
+data:
+  interval: day
+```
 
 ### Repairs
 

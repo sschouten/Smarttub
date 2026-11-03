@@ -104,6 +104,23 @@
         "name": "Licht {zone}"
       }
     },
+    "lock": {
+      "lock_temperature": {
+        "name": "Temperatuurvergrendeling"
+      },
+      "lock_spa": {
+        "name": "Spa-vergrendeling"
+      },
+      "lock_access": {
+        "name": "Toegangsvergrendeling"
+      },
+      "lock_maintenance": {
+        "name": "Onderhoudsvergrendeling"
+      },
+      "lock_tuning": {
+        "name": "Afstemvergrendeling"
+      }
+    },
     "sensor": {
       "blowout_cycle": {
         "name": "Uitblaascyclus"
@@ -137,6 +154,15 @@
       },
       "uv": {
         "name": "UV"
+      },
+      "signal_strength": {
+        "name": "Mobiele signaalsterkte"
+      },
+      "signal_quality": {
+        "name": "Mobiele signaalkwaliteit"
+      },
+      "last_wifi_connection": {
+        "name": "Laatste wifi-verbinding"
       }
     },
     "switch": {
@@ -213,6 +239,24 @@
         }
       },
       "name": "Herinnering uitstellen"
+    },
+    "get_energy_usage": {
+      "name": "Energieverbruik opvragen",
+      "description": "Geeft het energieverbruik dat de SmartTub-cloud meldt.",
+      "fields": {
+        "interval": {
+          "name": "Interval",
+          "description": "Per dag of per maand."
+        },
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Eerste dag (standaard: 6 dagen geleden, of 12 maanden geleden per maand)."
+        },
+        "end_date": {
+          "name": "Einddatum",
+          "description": "Laatste dag (standaard: vandaag)."
+        }
+      }
     }
   }
 }

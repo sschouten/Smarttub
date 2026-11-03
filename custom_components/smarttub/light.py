@@ -21,12 +21,12 @@ from .const import (
     DEFAULT_LIGHT_BRIGHTNESS,
     DEFAULT_LIGHT_EFFECT,
 )
+from .controller import SmartTubConfigEntry
+from .entity import SmartTubEntity
 
 ATTR_ZONE_TYPE = "zone_type"
 # exterior zones (corner lights) only support white, as in the SmartTub app
 EXTERIOR_LIGHT_EFFECTS = ("white",)
-from .controller import SmartTubConfigEntry
-from .entity import SmartTubEntity
 
 PARALLEL_UPDATES = 0
 

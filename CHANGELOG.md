@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.3.0 — 2026-11-03
+
+Adopted from Home Assistant 2026.11:
+
+- Error details are only fetched while the spa reports an error code (this was
+  often the slowest call).
+- Multiple spas are polled concurrently.
+- Thermostat uses the native temperature API on 2026.11+ (no deprecation
+  warnings) and the old API on earlier releases.
+- Services are registered once at startup (`services.py`).
+- Password field marked as secret.
+
+New:
+
+- Lock entities for the spa's control locks (temperature and spa lock enabled;
+  access/maintenance disabled by default).
+- Diagnostic sensors: cellular signal strength and quality, last Wi-Fi
+  connection (only for spas that report them).
+- Action `smarttub.get_energy_usage`: energy usage per day or month as
+  reported by the SmartTub cloud.
+- Device info shows the controller firmware and SmartTub link version.
+
+Fixed:
+
+- A spa in REST heat mode no longer breaks the thermostat (not mapped
+  upstream); `rest` is shown as preset while active.
+- Diagnostics downloads no longer contain the spa's GPS location (not
+  redacted upstream).
+
 ## 1.2.0 — 2026-11-03
 
 - Card: colour-cycling light modes (colour wheel, colour loop, party,

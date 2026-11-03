@@ -48,6 +48,11 @@ async def test_entry_diagnostics(
         }
     ]
     spa_state.properties["panelSerialNumber"] = "SN0123456789"
+    spa_state.properties["location"] = {
+        "latitude": 52.1,
+        "longitude": 4.6,
+        "accuracy": 10,
+    }
     spa_state.properties["lastWifi"] = {
         "ssid": "MyHomeWiFi",
         "lastConnectionTimestamp": "2025-08-29T18:26:25.689257Z",
@@ -65,6 +70,10 @@ async def test_entry_diagnostics(
     assert resilience["total_polls"] == 1
     assert resilience["last_success"] is not None
     assert resilience["options"]["poll_timeout"] == 30
+
+    location = result["spas"][0]["status"]["location"]
+    assert location == "**REDACTED**"
+    result["spas"][0]["status"].pop("location")
 
     assert result == snapshot
 

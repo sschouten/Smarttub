@@ -2,10 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.components.smarttub.frontend import (
-    URL_BASE,
-    async_register_card,
-)
+from homeassistant.components.smarttub.frontend import URL_BASE, async_register_card
 from homeassistant.const import EVENT_COMPONENT_LOADED
 from homeassistant.core import HomeAssistant
 

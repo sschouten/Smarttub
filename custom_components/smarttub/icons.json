@@ -13,6 +13,38 @@
         "default": "mdi:refresh"
       }
     },
+    "lock": {
+      "lock_temperature": {
+        "default": "mdi:lock",
+        "state": {
+          "unlocked": "mdi:lock-open-variant"
+        }
+      },
+      "lock_spa": {
+        "default": "mdi:lock",
+        "state": {
+          "unlocked": "mdi:lock-open-variant"
+        }
+      },
+      "lock_access": {
+        "default": "mdi:lock",
+        "state": {
+          "unlocked": "mdi:lock-open-variant"
+        }
+      },
+      "lock_maintenance": {
+        "default": "mdi:lock",
+        "state": {
+          "unlocked": "mdi:lock-open-variant"
+        }
+      },
+      "lock_tuning": {
+        "default": "mdi:lock",
+        "state": {
+          "unlocked": "mdi:lock-open-variant"
+        }
+      }
+    },
     "sensor": {
       "consecutive_failed_polls": {
         "default": "mdi:counter"
@@ -22,6 +54,15 @@
       },
       "last_successful_poll": {
         "default": "mdi:cloud-clock-outline"
+      },
+      "signal_strength": {
+        "default": "mdi:signal-cellular-3"
+      },
+      "signal_quality": {
+        "default": "mdi:signal"
+      },
+      "last_wifi_connection": {
+        "default": "mdi:wifi-clock"
       }
     }
   },
@@ -37,6 +78,9 @@
     },
     "snooze_reminder": {
       "service": "mdi:timer-pause"
+    },
+    "get_energy_usage": {
+      "service": "mdi:lightning-bolt"
     }
   }
 }
