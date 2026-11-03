@@ -15,7 +15,16 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from smarttub import SpaLight
 
-from .const import ATTR_LIGHTS, DEFAULT_LIGHT_BRIGHTNESS, DEFAULT_LIGHT_EFFECT
+from .const import (
+    ATTR_LIGHTS,
+    DEFAULT_EXTERIOR_LIGHT_EFFECT,
+    DEFAULT_LIGHT_BRIGHTNESS,
+    DEFAULT_LIGHT_EFFECT,
+)
+
+ATTR_ZONE_TYPE = "zone_type"
+# exterior zones (corner lights) only support white, as in the SmartTub app
+EXTERIOR_LIGHT_EFFECTS = ("white",)
 from .controller import SmartTubConfigEntry
 from .entity import SmartTubEntity
 
@@ -63,6 +72,25 @@ class SmartTubLight(SmartTubEntity, LightEntity):
         return self.coordinator.data[self.spa.id][ATTR_LIGHTS][self.light_zone]
 
     @property
+    def is_exterior(self) -> bool:
+        """Return True for an exterior zone (e.g. corner lights).
+
+        Exterior zones only support white; a colour mode such as the default
+        purple is accepted by the cloud but ignored by the spa.
+        """
+        properties = getattr(self.light, "properties", None) or {}
+        return (
+            properties.get("exterior") is True
+            or str(properties.get("zoneType", "")).upper() == "EXTERIOR"
+        )
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the zone type."""
+        return {ATTR_ZONE_TYPE: "exterior" if self.is_exterior else "interior"}
+
+    @property
     @override
     def brightness(self) -> int:
         """Return the brightness of this light between 0..255."""
@@ -103,6 +131,8 @@ class SmartTubLight(SmartTubEntity, LightEntity):
     @override
     def effect_list(self) -> list[str]:
         """Return the list of supported effects."""
+        if self.is_exterior:
+            return list(EXTERIOR_LIGHT_EFFECTS)
         return [
             effect
             for effect in map(self._light_mode_to_effect, SpaLight.LightMode)
@@ -129,8 +159,23 @@ class SmartTubLight(SmartTubEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the light on."""
 
-        effect = kwargs.get(ATTR_EFFECT, DEFAULT_LIGHT_EFFECT)
-        brightness = kwargs.get(ATTR_BRIGHTNESS, DEFAULT_LIGHT_BRIGHTNESS)
+        effect = kwargs.get(ATTR_EFFECT)
+        if effect is None and self.is_on and self.effect in self.effect_list:
+            # e.g. only the brightness changes: keep the current effect
+            effect = self.effect
+        if effect is None:
+            effect = (
+                DEFAULT_EXTERIOR_LIGHT_EFFECT
+                if self.is_exterior
+                else DEFAULT_LIGHT_EFFECT
+            )
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
+        if brightness is None:
+            brightness = (
+                self.brightness
+                if self.is_on and self.brightness
+                else DEFAULT_LIGHT_BRIGHTNESS
+            )
         mode = self._effect_to_light_mode(effect)
         intensity = self._hass_to_smarttub_brightness(brightness)
 

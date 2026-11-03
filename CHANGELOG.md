@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.1 — 2026-11-03
+
+- Fix: exterior light zones (e.g. corner lights) now turn on in white. They
+  only support white; the default purple was accepted by the SmartTub cloud
+  but ignored by the spa. Exterior zones offer only the `white` effect and
+  report `zone_type: exterior`.
+- Changing only the brightness of a light that is on keeps its current effect.
+- Card: exterior zones are labelled *Exterior* / *Buiten*; the tub rim follows
+  the interior lights only.
+
 ## 1.1.0 — 2026-11-02
 
 - New: `custom:smarttub-card`, shipped with the integration and registered

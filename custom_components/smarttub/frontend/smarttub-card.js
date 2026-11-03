@@ -13,7 +13,7 @@
  *   show_circulation: false
  */
 
-const CARD_VERSION = "1.1.0";
+const CARD_VERSION = "1.1.1";
 
 const STRINGS = {
   en: {
@@ -25,6 +25,7 @@ const STRINGS = {
     presets: { none: "Auto", eco: "Eco", day: "Day", ready: "Ready" },
     jets: "Jets",
     light: "Light",
+    exterior: "Exterior",
     circulation: "Circulation",
     on: "On",
     off: "Off",
@@ -85,6 +86,7 @@ const STRINGS = {
     presets: { none: "Auto", eco: "Eco", day: "Dag", ready: "Klaar" },
     jets: "Jets",
     light: "Licht",
+    exterior: "Buiten",
     circulation: "Circulatie",
     on: "Aan",
     off: "Uit",
@@ -490,7 +492,10 @@ class SmartTubCard extends HTMLElement {
     const target = this._pendingTarget ?? attrs.temperature;
     const current = attrs.current_temperature;
     const heating = attrs.hvac_action === "heating";
-    const lightsOn = e.lights.map((id) => this._st(id)).filter((st) => st?.state === "on");
+    // the rim shows the colour of the interior (underwater) lights
+    const lightsOn = e.lights
+      .map((id) => this._st(id))
+      .filter((st) => st?.state === "on" && st.attributes?.zone_type !== "exterior");
     const lightColor = lightsOn.length
       ? EFFECT_COLORS[lightsOn[0].attributes.effect] || DEFAULT_LIGHT_COLOR
       : null;
@@ -630,7 +635,8 @@ class SmartTubCard extends HTMLElement {
       const effect = st?.attributes?.effect;
       const pct = st?.attributes?.brightness ? Math.round((st.attributes.brightness / 255) * 100) : null;
       const color = EFFECT_COLORS[effect] || DEFAULT_LIGHT_COLOR;
-      const zone = shortName(st, e.deviceName).replace(/^Light\s*/i, "") || id;
+      const exterior = st?.attributes?.zone_type === "exterior";
+      const zone = exterior ? s.exterior : shortName(st, e.deviceName).replace(/^Light\s*/i, "") || id;
       const stateText = on
         ? [effect ? s.effects[effect] || effect.replace(/_/g, " ") : s.on, pct !== null ? pct + "%" : ""]
             .filter(Boolean).join(" ")

@@ -45,9 +45,10 @@ DEFAULT_MIN_TEMP = 18.5
 DEFAULT_MAX_TEMP = 40
 
 # the device doesn't remember any state for the light, so we have to choose a
-# mode (smarttub.SpaLight.LightMode) when turning it on. There is no white
-# mode.
+# mode (smarttub.SpaLight.LightMode) when turning it on.
 DEFAULT_LIGHT_EFFECT = "purple"
+# exterior zones (e.g. corner lights) only support white
+DEFAULT_EXTERIOR_LIGHT_EFFECT = "white"
 # default to 50% brightness
 DEFAULT_LIGHT_BRIGHTNESS = 128
 
