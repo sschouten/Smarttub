@@ -171,6 +171,15 @@
       },
       "clock_offset": {
         "name": "Klokafwijking"
+      },
+      "energy_today": {
+        "name": "Energie vandaag"
+      },
+      "energy_yesterday": {
+        "name": "Energie gisteren"
+      },
+      "energy_month": {
+        "name": "Energie deze maand"
       }
     },
     "switch": {

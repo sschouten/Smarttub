@@ -26,7 +26,7 @@ from .const import (
     DEFAULT_MAX_TEMP,
     DEFAULT_MIN_TEMP,
 )
-from .controller import SmartTubConfigEntry
+from .controller import SmartTubConfigEntry, energy_kwh
 from .entity import SmartTubEntity
 
 PRESET_DAY = "day"
@@ -213,7 +213,12 @@ class SmartTubThermostat(SmartTubEntity, ClimateEntity):
             ATTR_INTERVAL: interval,
             ATTR_START_DATE: start.isoformat(),
             ATTR_END_DATE: end.isoformat(),
-            "buckets": buckets,
+            "buckets": [
+                {**bucket, "kwh": energy_kwh(bucket.get("value"))}
+                if isinstance(bucket, dict)
+                else bucket
+                for bucket in buckets or []
+            ],
         }
 
     async def async_set_date_time(self, date=None, time=None) -> None:

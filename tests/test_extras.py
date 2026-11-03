@@ -112,7 +112,7 @@ async def test_locks(
 
 async def test_get_energy_usage(hass: HomeAssistant, spa, config_entry) -> None:
     """The energy usage service returns the cloud's buckets."""
-    spa.get_energy_usage.return_value = [{"date": "2026-11-02", "kwh": 3.2}]
+    spa.get_energy_usage.return_value = [{"key": "2026-11-02", "value": 0.5}]
     await _setup(hass, config_entry)
 
     response = await hass.services.async_call(
@@ -128,7 +128,7 @@ async def test_get_energy_usage(hass: HomeAssistant, spa, config_entry) -> None:
         return_response=True,
     )
     result = response[f"climate.{PREFIX}_thermostat"]
-    assert result["buckets"] == [{"date": "2026-11-02", "kwh": 3.2}]
+    assert result["buckets"] == [{"key": "2026-11-02", "value": 0.5, "kwh": 11.0}]
     assert result["start_date"] == "2026-11-01"
     spa.get_energy_usage.assert_awaited_with(
         smarttub.Spa.EnergyUsageInterval.DAY,
@@ -230,3 +230,32 @@ async def test_auto_clock_sync(hass: HomeAssistant, spa, spa_state, account) -> 
         await _setup(hass, entry)
         await hass.async_block_till_done()
     assert spa.request.await_args.args[:2] == ("PATCH", "config")
+
+
+async def test_energy_sensors(hass: HomeAssistant, spa, config_entry) -> None:
+    """Energy usage is converted to kWh (factor 22, as in the SmartTub app)."""
+    now = dt.datetime(2026, 11, 2, 12, 0, tzinfo=dt.UTC)
+
+    async def energy(interval, start, end):
+        if interval is smarttub.Spa.EnergyUsageInterval.DAY:
+            return [
+                {"key": "2026-11-02", "value": 0.3261818181818182},
+                {"key": "2026-11-01", "value": 0.2869090909090909},
+            ]
+        return [{"key": "2026-11", "value": 0.6130909090909091}]
+
+    spa.get_energy_usage.side_effect = energy
+    with patch("homeassistant.util.dt.utcnow", return_value=now):
+        await _setup(hass, config_entry)
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+    today = hass.states.get(f"sensor.{PREFIX}_energy_today")
+    assert float(today.state) == pytest.approx(7.176)
+    assert today.attributes["unit_of_measurement"] == "kWh"
+    assert today.attributes["state_class"] == "total_increasing"
+    assert float(
+        hass.states.get(f"sensor.{PREFIX}_energy_yesterday").state
+    ) == pytest.approx(6.312)
+    assert float(
+        hass.states.get(f"sensor.{PREFIX}_energy_this_month").state
+    ) == pytest.approx(13.488)

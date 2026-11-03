@@ -59,6 +59,8 @@ from .const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_OPTIONS,
     DOMAIN,
+    ENERGY_KWH_FACTOR,
+    ENERGY_UPDATE_INTERVAL,
     ISSUE_API_UNREACHABLE,
     ISSUE_UPSTREAM_CHANGED,
     REPO_URL,
@@ -116,6 +118,10 @@ class SmartTubController:
         self.last_error: str | None = None
         self.holding_stale_data = False
         self.last_clock_sync: dict[str, float] = {}
+        # energy usage per spa: {"today": kWh, "yesterday": kWh, "month": kWh}
+        self.energy: dict[str, dict[str, Any]] = {}
+        self._energy_fetched: float | None = None
+        self._energy_task: asyncio.Task | None = None
         # index of the date/time payload shape the cloud accepted
         self._date_time_body: int | None = None
 
@@ -239,6 +245,7 @@ class SmartTubController:
                     raise result
                 data[spa.id] = result
             self._record_success(started)
+            self._schedule_energy_update()
             if self.auto_clock_sync:
                 self._hass.async_create_task(self._async_auto_clock_sync(data))
         except LoginFailed as err:
@@ -431,6 +438,54 @@ class SmartTubController:
             if getattr(self, "coordinator", None) is not None:
                 await self.coordinator.async_request_refresh()
         return True
+
+    # ------------------------------------------------------------------ energy
+
+    @callback
+    def _schedule_energy_update(self) -> None:
+        """Fetch the energy usage in the background, every 30 minutes."""
+        if self._energy_task is not None and not self._energy_task.done():
+            return
+        now = time.monotonic()
+        if (
+            self._energy_fetched is not None
+            and now - self._energy_fetched < ENERGY_UPDATE_INTERVAL
+        ):
+            return
+        self._energy_fetched = now
+        self._energy_task = self._hass.async_create_background_task(
+            self._async_update_energy(), f"{DOMAIN}_energy_usage"
+        )
+
+    async def _async_update_energy(self) -> None:
+        """Fetch today's, yesterday's and this month's energy usage."""
+        today = dt_util.utcnow().date()  # the cloud uses UTC days
+        yesterday = today - timedelta(days=1)
+        for spa in self.spas:
+            try:
+                async with asyncio.timeout(self.aux_timeout):
+                    days = await spa.get_energy_usage(
+                        Spa.EnergyUsageInterval.DAY, yesterday, today
+                    )
+                async with asyncio.timeout(self.aux_timeout):
+                    months = await spa.get_energy_usage(
+                        Spa.EnergyUsageInterval.MONTH, today.replace(day=1), today
+                    )
+            except POLL_ERRORS as err:
+                _LOGGER.debug("SmartTub energy usage not available: %s", _describe(err))
+                # retry at the next poll instead of in 30 minutes
+                self._energy_fetched = None
+                continue
+            by_day = {b.get("key"): b.get("value") for b in days or []}
+            by_month = {b.get("key"): b.get("value") for b in months or []}
+            self.energy[spa.id] = {
+                "today": energy_kwh(by_day.get(today.isoformat(), 0)),
+                "yesterday": energy_kwh(by_day.get(yesterday.isoformat(), 0)),
+                "month": energy_kwh(by_month.get(today.strftime("%Y-%m"), 0)),
+                "day": today.isoformat(),
+                "updated": dt_util.utcnow().isoformat(),
+            }
+        self.coordinator.async_update_listeners()
 
     # ------------------------------------------------------------------- clock
 
@@ -636,7 +691,15 @@ class SmartTubController:
             "aux_failures": self.aux_failures,
             "last_error": self.last_error,
             "holding_stale_data": self.holding_stale_data,
+            "energy": self.energy,
         }
+
+
+def energy_kwh(value: Any) -> float | None:
+    """Convert a SmartTub energy bucket value to kWh."""
+    if not isinstance(value, int | float):
+        return None
+    return round(value * ENERGY_KWH_FACTOR, 3)
 
 
 def _describe(err: BaseException) -> str:

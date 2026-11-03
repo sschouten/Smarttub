@@ -33,6 +33,12 @@ AUTO_CLOCK_SYNC = False
 CLOCK_SYNC_THRESHOLD = 3
 # minimum time between two automatic clock syncs
 CLOCK_SYNC_COOLDOWN = 3600
+# The SmartTub cloud reports energy usage in a unit that is 1/22 of a kWh: the
+# SmartTub app shows the same buckets multiplied by 22, labelled kWh
+# ("based on 240V"). Verified against the app for 5 days (2026-10/11).
+ENERGY_KWH_FACTOR = 22.0
+# how often the energy usage is fetched (seconds)
+ENERGY_UPDATE_INTERVAL = 1800
 # random extra delay (fraction of the interval) to spread load on the cloud API
 BACKOFF_JITTER = 0.1
 

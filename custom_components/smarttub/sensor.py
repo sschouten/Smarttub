@@ -9,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import ATTR_MODE, EntityCategory, UnitOfTime
+from homeassistant.const import ATTR_MODE, EntityCategory, UnitOfEnergy, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -58,6 +58,10 @@ async def async_setup_entry(
             ]
         )
         entities.append(SmartTubClockOffsetSensor(controller.coordinator, spa))
+        entities.extend(
+            SmartTubEnergySensor(controller.coordinator, spa, period)
+            for period in ("today", "yesterday", "month")
+        )
         properties = controller.coordinator.data[spa.id]["status"].properties
         if isinstance(properties.get("signal"), dict):
             entities.extend(
@@ -365,3 +369,42 @@ class SmartTubClockOffsetSensor(SmartTubEntity, SensorEntity):
         """Return the spa clock."""
         spa_clock = self.controller.spa_clock(self.spa.id)
         return {"spa_clock": spa_clock.isoformat() if spa_clock else None}
+
+
+class SmartTubEnergySensor(SmartTubEntity, SensorEntity):
+    """Energy usage as reported by the SmartTub cloud (UTC days).
+
+    The cloud values are estimates based on 240 V, the same numbers the
+    SmartTub app shows. "today" and "month" can be used in the Energy
+    dashboard; they reset at the start of a UTC day/month.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 2
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator[dict[str, Any]],
+        spa: smarttub.Spa,
+        period: str,
+    ) -> None:
+        """Initialize the entity."""
+        super().__init__(coordinator, spa, f"energy_{period}")
+        self._period = period
+        self._attr_translation_key = f"energy_{period}"
+        if period != "yesterday":
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    @property
+    @override
+    def native_value(self) -> float | None:
+        """Return the energy usage in kWh."""
+        return (self.controller.energy.get(self.spa.id) or {}).get(self._period)
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return when the value was fetched."""
+        energy = self.controller.energy.get(self.spa.id) or {}
+        return {"utc_day": energy.get("day"), "updated": energy.get("updated")}

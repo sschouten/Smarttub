@@ -171,6 +171,15 @@
       },
       "clock_offset": {
         "name": "Clock offset"
+      },
+      "energy_today": {
+        "name": "Energy today"
+      },
+      "energy_yesterday": {
+        "name": "Energy yesterday"
+      },
+      "energy_month": {
+        "name": "Energy this month"
       }
     },
     "switch": {
