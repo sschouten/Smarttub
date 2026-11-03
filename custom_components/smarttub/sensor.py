@@ -345,6 +345,7 @@ class SmartTubClockOffsetSensor(SmartTubEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "clock_offset"
+    _attr_suggested_display_precision = 0
 
     def __init__(
         self, coordinator: DataUpdateCoordinator[dict[str, Any]], spa: smarttub.Spa

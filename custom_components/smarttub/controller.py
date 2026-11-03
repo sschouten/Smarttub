@@ -116,6 +116,8 @@ class SmartTubController:
         self.last_error: str | None = None
         self.holding_stale_data = False
         self.last_clock_sync: dict[str, float] = {}
+        # index of the date/time payload shape the cloud accepted
+        self._date_time_body: int | None = None
 
     # ------------------------------------------------------------------ options
 
@@ -474,9 +476,45 @@ class SmartTubController:
             now = dt_util.now()
             date_value, time_value = now.date(), now.time().replace(microsecond=0)
         await self.async_command(
-            spa.set_date_time(date=date_value, time=time_value), "set date and time"
+            self._async_patch_date_time(spa, date_value, time_value),
+            "set date and time",
         )
         self.last_clock_sync[spa.id] = time.monotonic()
+
+    async def _async_patch_date_time(
+        self, spa: Spa, date_value: date | None, time_value: dt_time | None
+    ) -> None:
+        """Send the date/time to the spa.
+
+        python-smarttub's set_date_time() uses POST /config, which the cloud
+        rejects with 405; other config changes (temperature, heat mode) use
+        PATCH /config. The payload shape is undocumented, so the known shapes
+        are tried in order and the one that is accepted is remembered.
+        """
+        config: dict[str, str] = {}
+        if date_value is not None:
+            config["date"] = date_value.isoformat()
+        if time_value is not None:
+            config["time"] = time_value.isoformat("minutes")
+        bodies = [{"dateTimeConfig": config}, config]
+        if self._date_time_body is not None:
+            bodies.insert(0, bodies.pop(self._date_time_body))
+        last_error: APIError | None = None
+        for body in bodies:
+            try:
+                await spa.request("PATCH", "config", body)
+            except APIError as err:
+                status = getattr(err.args[0] if err.args else None, "status", None)
+                if status not in (400, 405, 422):
+                    raise
+                _LOGGER.debug("SmartTub rejected date/time body %s: %s", body, err)
+                last_error = err
+                continue
+            self._date_time_body = 0 if "dateTimeConfig" in body else 1
+            _LOGGER.debug("SmartTub accepted date/time body %s", body)
+            return
+        assert last_error is not None
+        raise last_error
 
     async def _async_auto_clock_sync(self, data: dict[str, Any]) -> None:
         """Correct spa clocks that are off (e.g. after a DST change)."""

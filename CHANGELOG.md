@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.1 — 2026-11-03
+
+- Fix: setting the spa clock failed with *405 Method Not Allowed*.
+  python-smarttub sends the date/time with `POST /config`; the cloud only
+  accepts `PATCH /config` (like temperature and heat mode). The fork now sends
+  it itself and remembers which payload shape the cloud accepts.
+- Clock offset sensor shown without decimals.
+
 ## 1.4.0 — 2026-11-03
 
 - New: *Clock offset* sensor — how many minutes the spa clock is ahead or

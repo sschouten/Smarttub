@@ -3,6 +3,7 @@
 import datetime as dt
 from unittest.mock import AsyncMock, patch
 
+import aiohttp
 import pytest
 import smarttub
 
@@ -156,7 +157,11 @@ async def test_clock_offset_and_sync(
             {"entity_id": f"button.{PREFIX}_sync_clock"},
             blocking=True,
         )
-    spa.set_date_time.assert_awaited_once()
+    spa.request.assert_awaited_with(
+        "PATCH",
+        "config",
+        {"dateTimeConfig": {"date": "2026-11-03", "time": "08:55"}},
+    )
 
     await hass.services.async_call(
         DOMAIN,
@@ -168,9 +173,41 @@ async def test_clock_offset_and_sync(
         },
         blocking=True,
     )
-    spa.set_date_time.assert_awaited_with(
-        date=dt.date(2026, 11, 4), time=dt.time(12, 30)
+    spa.request.assert_awaited_with(
+        "PATCH",
+        "config",
+        {"dateTimeConfig": {"date": "2026-11-04", "time": "12:30"}},
     )
+
+
+async def test_set_date_time_falls_back_to_flat_body(
+    hass: HomeAssistant, spa, config_entry
+) -> None:
+    """When the cloud rejects the nested body the flat one is tried."""
+    rejected = smarttub.APIError(
+        aiohttp.ClientResponseError(None, (), status=400, message="Bad Request")
+    )
+    spa.request.side_effect = [rejected, None, None]
+    await _setup(hass, config_entry)
+
+    data = {
+        "entity_id": f"climate.{PREFIX}_thermostat",
+        "date": "2026-11-04",
+        "time": "12:30:00",
+    }
+    await hass.services.async_call(DOMAIN, "set_date_time", data, blocking=True)
+    assert spa.request.await_args_list[-1].args == (
+        "PATCH",
+        "config",
+        {"date": "2026-11-04", "time": "12:30"},
+    )
+
+    # the accepted shape is used first from now on
+    await hass.services.async_call(DOMAIN, "set_date_time", data, blocking=True)
+    assert spa.request.await_args_list[-1].args[2] == {
+        "date": "2026-11-04",
+        "time": "12:30",
+    }
 
 
 async def test_auto_clock_sync(hass: HomeAssistant, spa, spa_state, account) -> None:
@@ -188,4 +225,4 @@ async def test_auto_clock_sync(hass: HomeAssistant, spa, spa_state, account) -> 
     with patch("homeassistant.util.dt.utcnow", return_value=now):
         await _setup(hass, entry)
         await hass.async_block_till_done()
-    spa.set_date_time.assert_awaited_once()
+    assert spa.request.await_args.args[:2] == ("PATCH", "config")
