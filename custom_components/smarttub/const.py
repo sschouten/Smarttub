@@ -90,23 +90,9 @@ ATTR_TIME = "time"
 # --- Repairs ----------------------------------------------------------------
 
 ISSUE_API_UNREACHABLE = "api_unreachable"
+# no longer raised (removed in 1.5.1); only used to clean up the old issue
 ISSUE_UPSTREAM_CHANGED = "upstream_changed"
 
-# The built-in integration in Home Assistant 2026.10.x uses a 10 s polling
-# timeout for all three calls together. When the built-in constant changes, or
-# when HA reaches UPSTREAM_FIXED_IN_HA (set in a later release of this fork
-# once the upstream fix has shipped), a repair issue suggests removing the fork.
-UPSTREAM_BROKEN_POLLING_TIMEOUT = 10
-UPSTREAM_FIXED_IN_HA: str | None = None
-# Newest HA release this fork was built against. On newer releases a changed
-# built-in controller.py (hash not listed below) is reported as a repair issue.
-BUILT_AGAINST_HA = "2026.10.4"
-UPSTREAM_KNOWN_CONTROLLER_SHA256 = frozenset(
-    {
-        # homeassistant/components/smarttub/controller.py @ 2026.10.4
-        "0e3ff385c040fb4aa1e861e55ec3f1fd5254e6b394aaf906405f4768b82e9594",
-    }
-)
 REPO_URL = "https://github.com/sschouten/Smarttub"
 
 # library error raised when a command was accepted but the new state was not

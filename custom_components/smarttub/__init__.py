@@ -1,5 +1,6 @@
 """SmartTub integration (resilient fork of the built-in integration)."""
 
+from homeassistant.config_entries import ConfigEntries
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
@@ -11,6 +12,10 @@ from .frontend import async_register_card
 from .services import async_setup_services
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# Home Assistant 2026.11 expects None from the config entry methods (and an
+# exception on failure); earlier releases require a boolean.
+ENTRY_METHODS_RETURN_NONE = hasattr(ConfigEntries, "async_unload_platforms_or_raise")
 
 PLATFORMS = [
     Platform.BINARY_SENSOR,
@@ -30,7 +35,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: SmartTubConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: SmartTubConfigEntry
+) -> bool | None:
     """Set up a smarttub config entry."""
 
     controller = SmartTubController(hass)
@@ -43,11 +50,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartTubConfigEntry) -> 
 
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
-    return True
+    return None if ENTRY_METHODS_RETURN_NONE else True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: SmartTubConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: SmartTubConfigEntry
+) -> bool | None:
     """Remove a smarttub config entry."""
+    if ENTRY_METHODS_RETURN_NONE:
+        await hass.config_entries.async_unload_platforms_or_raise(entry, PLATFORMS)
+        return None
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

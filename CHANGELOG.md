@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.1 — 2026-11-10
+
+- Removed: the comparison with the built-in SmartTub integration and its
+  repair issue *Built-in SmartTub integration changed*. The issue appeared
+  after every Home Assistant release that touched the built-in integration
+  (such as 2026.11) and suggested removing this integration. An issue left
+  behind by an earlier version is removed automatically.
+- Home Assistant 2026.11: the config entry methods return `None` and unload
+  with `async_unload_platforms_or_raise`, as the new convention asks; earlier
+  releases keep the boolean.
+- Tests run against Home Assistant 2026.10.4 and 2026.11.1.
+
 ## 1.5.0 — 2026-11-03
 
 - New: energy sensors *Energy today*, *Energy yesterday* and *Energy this

@@ -13,20 +13,6 @@ from homeassistant.setup import async_setup_component
 from tests.common import MockConfigEntry
 
 
-@pytest.fixture(autouse=True)
-def mock_upstream_check():
-    """Pretend the built-in integration is unchanged.
-
-    In this test setup the fork replaces the built-in files, so the real check
-    would always see a changed upstream.
-    """
-    with patch(
-        "homeassistant.components.smarttub.controller._upstream_change_reason",
-        return_value=None,
-    ):
-        yield
-
-
 @pytest.fixture
 def config_data() -> dict[str, Any]:
     """Provide configuration data for tests."""

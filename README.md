@@ -228,7 +228,6 @@ data:
 | Issue | When |
 |---|---|
 | **SmartTub cloud API unreachable** | The failure threshold was reached. Clears itself after the next successful poll. |
-| **Built-in SmartTub integration changed** | After a Home Assistant update the built-in integration differs from the version this one is based on. Check the release notes to decide whether you still need this integration. |
 
 ### Diagnostics
 

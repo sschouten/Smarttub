@@ -206,10 +206,6 @@
     "api_unreachable": {
       "title": "SmartTub cloud-API onbereikbaar",
       "description": "De SmartTub cloud-API faalde {failures} polls op rij (laatste fout: {error}). Laatste geslaagde poll: {last_success}. Entiteiten zijn onbeschikbaar tot de API weer reageert; het pollinterval wordt automatisch verlengd. Deze melding verdwijnt na de volgende geslaagde poll."
-    },
-    "upstream_changed": {
-      "title": "Ingebouwde SmartTub-integratie gewijzigd",
-      "description": "Home Assistant {version}: {reason}. Controleer in de release notes of de ingebouwde integratie nu goed omgaat met een trage SmartTub-API. Zo ja en wil je terug, verwijder dan `custom_components/smarttub` (of de HACS-repository) en herstart; entiteiten en automations blijven werken omdat domein en unique IDs gelijk zijn."
     }
   },
   "services": {

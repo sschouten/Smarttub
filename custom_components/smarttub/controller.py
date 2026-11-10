@@ -14,18 +14,15 @@ Resilient fork of the built-in Home Assistant SmartTub controller:
 import asyncio
 from collections.abc import Callable, Coroutine
 from datetime import date, datetime, time as dt_time, timedelta
-import hashlib
 import logging
-from pathlib import Path
 import random
 import time
 from typing import Any
 
 from aiohttp import ClientError, client_exceptions
-from awesomeversion import AwesomeVersion
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, __version__ as HA_VERSION
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
@@ -47,7 +44,6 @@ from .const import (
     ATTR_SENSORS,
     ATTR_STATUS,
     BACKOFF_JITTER,
-    BUILT_AGAINST_HA,
     CLOCK_SYNC_COOLDOWN,
     CLOCK_SYNC_THRESHOLD,
     CONF_AUTO_CLOCK_SYNC,
@@ -65,9 +61,6 @@ from .const import (
     ISSUE_UPSTREAM_CHANGED,
     REPO_URL,
     UNCONFIRMED_COMMAND_MESSAGE,
-    UPSTREAM_BROKEN_POLLING_TIMEOUT,
-    UPSTREAM_FIXED_IN_HA,
-    UPSTREAM_KNOWN_CONTROLLER_SHA256,
 )
 from .helpers import get_spa_name
 
@@ -221,7 +214,9 @@ class SmartTubController:
 
         self.async_register_devices(entry)
 
-        await self._async_check_upstream()
+        # the comparison with the built-in integration was removed in 1.5.1;
+        # drop the repair issue an earlier version may have left behind
+        ir.async_delete_issue(self._hass, DOMAIN, ISSUE_UPSTREAM_CHANGED)
 
         return True
 
@@ -628,23 +623,6 @@ class SmartTubController:
             learn_more_url=REPO_URL,
         )
 
-    async def _async_check_upstream(self) -> None:
-        """Raise a repair issue when the built-in integration may be fixed."""
-        reason = await self._hass.async_add_executor_job(_upstream_change_reason)
-        if reason is None:
-            ir.async_delete_issue(self._hass, DOMAIN, ISSUE_UPSTREAM_CHANGED)
-            return
-        ir.async_create_issue(
-            self._hass,
-            DOMAIN,
-            ISSUE_UPSTREAM_CHANGED,
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_UPSTREAM_CHANGED,
-            translation_placeholders={"reason": reason, "version": HA_VERSION},
-            learn_more_url=REPO_URL,
-        )
-
     # -------------------------------------------------------------------- misc
 
     @callback
@@ -706,38 +684,3 @@ def _describe(err: BaseException) -> str:
     """Return a short, log-friendly description of an exception."""
     text = str(err)
     return f"{type(err).__name__}: {text}" if text else type(err).__name__
-
-
-def _upstream_change_reason() -> str | None:
-    """Check whether the built-in smarttub integration looks fixed.
-
-    Runs in the executor (reads files). Returns a reason or None.
-    """
-    current = AwesomeVersion(HA_VERSION)
-    if UPSTREAM_FIXED_IN_HA and current >= AwesomeVersion(UPSTREAM_FIXED_IN_HA):
-        return f"the fix is included since Home Assistant {UPSTREAM_FIXED_IN_HA}"
-
-    try:
-        import homeassistant.components as ha_components  # noqa: PLC0415
-
-        builtin = Path(ha_components.__file__).parent / "smarttub"
-        const_text = (builtin / "const.py").read_text(encoding="utf-8")
-        controller_bytes = (builtin / "controller.py").read_bytes()
-    except OSError:
-        return None
-
-    for line in const_text.splitlines():
-        if line.startswith("POLLING_TIMEOUT"):
-            try:
-                value = float(line.split("=", 1)[1].strip())
-            except ValueError:
-                break
-            if value > UPSTREAM_BROKEN_POLLING_TIMEOUT:
-                return f"the built-in POLLING_TIMEOUT is now {value:g} s"
-            break
-
-    if current > AwesomeVersion(BUILT_AGAINST_HA):
-        digest = hashlib.sha256(controller_bytes).hexdigest()
-        if digest not in UPSTREAM_KNOWN_CONTROLLER_SHA256:
-            return "the built-in SmartTub controller has changed"
-    return None

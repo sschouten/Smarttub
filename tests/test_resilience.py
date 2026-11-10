@@ -322,27 +322,20 @@ async def test_options_flow(hass: HomeAssistant, config_entry, setup_entry) -> N
     assert controller.coordinator.update_interval == timedelta(seconds=120)
 
 
-async def test_upstream_changed_issue(hass: HomeAssistant, config_entry) -> None:
-    """A repair issue is raised when the built-in integration changed."""
-    with patch(
-        "homeassistant.components.smarttub.controller._upstream_change_reason",
-        return_value="the built-in POLLING_TIMEOUT is now 30 s",
-    ):
-        config_entry.add_to_hass(hass)
-        await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
-
-    assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_UPSTREAM_CHANGED)
-
-
-async def test_no_upstream_issue_by_default(hass: HomeAssistant, config_entry) -> None:
-    """No repair issue when the built-in integration is unchanged."""
-    with patch(
-        "homeassistant.components.smarttub.controller._upstream_change_reason",
-        return_value=None,
-    ):
-        config_entry.add_to_hass(hass)
-        await hass.config_entries.async_setup(config_entry.entry_id)
-        await hass.async_block_till_done()
+async def test_old_upstream_issue_is_removed(hass: HomeAssistant, config_entry) -> None:
+    """The repair issue of versions before 1.5.1 is cleaned up at setup."""
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        ISSUE_UPSTREAM_CHANGED,
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        # the old translation no longer exists; any existing key will do here
+        translation_key=ISSUE_API_UNREACHABLE,
+        translation_placeholders={"failures": "0", "error": "-", "last_success": "-"},
+    )
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
 
     assert ir.async_get(hass).async_get_issue(DOMAIN, ISSUE_UPSTREAM_CHANGED) is None

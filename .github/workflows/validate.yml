@@ -29,10 +29,14 @@ jobs:
           ignore: brands topics
 
   tests:
-    name: Tests (HA core harness)
+    name: Tests (HA ${{ matrix.ha }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ha: ["2026.10.4", "2026.11.1"]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
       - name: Run tests
-        run: scripts/run_core_tests.sh 2026.10.4
+        run: scripts/run_core_tests.sh ${{ matrix.ha }}

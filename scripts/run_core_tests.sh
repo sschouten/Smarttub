@@ -18,7 +18,8 @@ git sparse-checkout set --no-cone \
   '/tests/*.py' '/tests/components/*.py' '/tests/test_util/' '/tests/testing_config/' \
   '/tests/components/diagnostics/' '/tests/components/recorder/' \
   '/tests/helpers/__init__.py' '/requirements_test.txt' \
-  '/homeassistant/package_constraints.txt' '/pyproject.toml'
+  '/homeassistant/package_constraints.txt' '/pyproject.toml' \
+  '/packages/pytest-homeassistant/'
 
 PYTHON_VERSION="$(sed -n 's/^requires-python *= *">=\([0-9.]*\)".*/\1/p' pyproject.toml | cut -d. -f1,2)"
 if [ ! -d .venv ]; then
@@ -30,6 +31,20 @@ grep -vE '^-[cr]|mypy|pylint|astroid|prek|codspeed|librt|ast-serialize' \
   requirements_test.txt > .req-test.txt
 uv pip install -q "homeassistant==$HA_VERSION" "python-smarttub>=0.0.47" \
   paho-mqtt aiohasupervisor -r .req-test.txt -c homeassistant/package_constraints.txt
+# Home Assistant 2026.11+ keeps its test helpers in a separate package
+# and no longer has tests.common; this repository's tests import the old paths
+if [ -d packages/pytest-homeassistant ]; then
+  uv pip install -q --no-deps -e packages/pytest-homeassistant
+  shim() {
+    [ -e "$1" ] && return
+    echo "import sys, $2 as _m; sys.modules[__name__] = _m" > "$1"
+  }
+  shim tests/common.py pytest_homeassistant.common
+  shim tests/typing.py pytest_homeassistant.typing
+  grep -q get_diagnostics_for_config_entry tests/components/diagnostics/__init__.py ||
+    echo "from pytest_homeassistant.components.diagnostics import get_diagnostics_for_config_entry  # noqa: F401" \
+      >> tests/components/diagnostics/__init__.py
+fi
 
 # replace the built-in component and its tests with this repository's version
 SITE="$(python -c 'import homeassistant, os; print(os.path.dirname(homeassistant.__file__))')"
